@@ -183,6 +183,7 @@ func TestFailWithNoRefGrant(t *testing.T) {
 		})
 	}
 }
+
 func TestFailWithWrongNs(t *testing.T) {
 	inputs := []any{
 		svc("default3"),
@@ -544,7 +545,7 @@ func preRouteIndex(t *testing.T, inputs []any) *RoutesIndex {
 
 	policies := NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
 	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
-	upstreams := NewBackendIndex(krtutil.KrtOptions{}, nil, policies, refgrants)
+	upstreams := NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
 	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
 	pools := krttest.GetMockCollection[*infextv1a2.InferencePool](mock)
 	upstreams.AddBackends(infPoolGk, infPoolUpstreams(pools))

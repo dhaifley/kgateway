@@ -137,9 +137,8 @@ type serviceEntryPlugin struct {
 	selectedWorkloadsIndex  krt.Index[string, selectedWorkload]
 
 	// output collections
-	Backends      krt.Collection[ir.BackendObjectIR]
-	Endpoints     krt.Collection[ir.EndpointsForBackend]
-	backendsIndex krt.Index[backendKey, ir.BackendObjectIR]
+	Backends  krt.Collection[ir.BackendObjectIR]
+	Endpoints krt.Collection[ir.EndpointsForBackend]
 }
 
 func initServiceEntryCollections(
@@ -172,12 +171,6 @@ func initServiceEntryCollections(
 	// init the outputs
 	Backends := backendsCollections(logger, commonCols.ServiceEntries, commonCols.KrtOpts)
 	Endpoints := endpointsCollection(Backends, SelectedWorkloads, selectedWorkloadsIndex, commonCols.KrtOpts)
-	backendsIndex := krt.NewIndex(Backends, func(be ir.BackendObjectIR) []backendKey {
-		return []backendKey{
-			makeHostPortKey(be.CanonicalHostname, be.Port),
-			makeSrcObjKey(be.ObjectSource),
-		}
-	})
 
 	return serviceEntryPlugin{
 		logger: contextutils.LoggerFrom(ctx),
@@ -189,9 +182,8 @@ func initServiceEntryCollections(
 		SelectedWorkloads:       SelectedWorkloads,
 		selectedWorkloadsIndex:  selectedWorkloadsIndex,
 
-		Backends:      Backends,
-		Endpoints:     Endpoints,
-		backendsIndex: backendsIndex,
+		Backends:  Backends,
+		Endpoints: Endpoints,
 	}
 }
 

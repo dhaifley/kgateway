@@ -80,8 +80,9 @@ type PolicyPlugin struct {
 
 type BackendPlugin struct {
 	ir.BackendInit
-	Backends  krt.Collection[ir.BackendObjectIR]
-	Endpoints krt.Collection[ir.EndpointsForBackend]
+	AliasKinds []schema.GroupKind
+	Backends   krt.Collection[ir.BackendObjectIR]
+	Endpoints  krt.Collection[ir.EndpointsForBackend]
 }
 
 type KGwTranslator interface {

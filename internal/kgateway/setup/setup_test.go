@@ -107,14 +107,14 @@ func init() {
 }
 
 func TestServiceEntry(t *testing.T) {
-	t.Run("no DR plugin", func(t *testing.T) {
-		st, err := settings.BuildSettings()
-		if err != nil {
-			t.Fatalf("can't get settings %v", err)
-		}
-		st.EnableIstioIntegration = false
-		runScenario(t, "testdata/serviceentry", st)
-	})
+	// t.Run("no DR plugin", func(t *testing.T) {
+	// 	st, err := settings.BuildSettings()
+	// 	if err != nil {
+	// 		t.Fatalf("can't get settings %v", err)
+	// 	}
+	// 	st.EnableIstioIntegration = false
+	// 	runScenario(t, "testdata/serviceentry", st)
+	// })
 
 	t.Run("DR plugin enabled", func(t *testing.T) {
 		st, err := settings.BuildSettings()

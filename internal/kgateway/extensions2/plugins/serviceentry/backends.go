@@ -7,6 +7,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
@@ -105,18 +106,31 @@ func BuildServiceEntryBackendObjectIR(
 	svcPort int32,
 	svcProtocol string,
 ) ir.BackendObjectIR {
+	objSrc := ir.ObjectSource{
+		Group:     gvk.ServiceEntry.Group,
+		Kind:      gvk.ServiceEntry.Kind,
+		Namespace: se.GetNamespace(),
+		Name:      se.GetName(),
+	}
 	return ir.BackendObjectIR{
-		ObjectSource: ir.ObjectSource{
-			Group:     gvk.ServiceEntry.Group,
-			Kind:      gvk.ServiceEntry.Kind,
-			Namespace: se.GetNamespace(),
-			Name:      se.GetName(),
-		},
+		ObjectSource:      objSrc,
 		Port:              svcPort,
 		AppProtocol:       ir.ParseAppProtocol(ptr.To(svcProtocol)),
 		GvPrefix:          BackendClusterPrefix,
 		CanonicalHostname: hostname,
 		Obj:               se,
+
+		// also allow hostname reference
+		Aliases: []ir.ObjectSource{
+			{
+				Group:     wellknown.HostnameGVK.Group,
+				Kind:      wellknown.HostnameGVK.Kind,
+				Name:      hostname,
+				Namespace: "", // global
+			},
+			objSrc,
+		},
+
 		// TODO ObjIr:             nil,
 		AttachedPolicies: ir.AttachedPolicies{},
 
