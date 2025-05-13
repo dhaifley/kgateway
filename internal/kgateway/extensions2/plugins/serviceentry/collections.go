@@ -2,7 +2,6 @@ package serviceentry
 
 import (
 	"context"
-	"strconv"
 	"strings"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -43,28 +42,6 @@ var (
 // serviceEntryKey keys ServiceEntry on its name and namespace
 func serviceEntryKey(obj ir.Namespaced) string {
 	return obj.GetNamespace() + "/" + obj.GetName()
-}
-
-// backendKey uniquely identifies a Backend resource.
-// It can be identified either by host/port combination OR by source object reference.
-// When used for indexing, both identifiers will be added to the index.
-type backendKey struct {
-	host string
-	port int32
-
-	srcObj string
-}
-
-func makeHostPortKey(host string, port int32) backendKey {
-	return backendKey{host: host, port: port}
-}
-
-func makeSrcObjKey(obj ir.ObjectSource) backendKey {
-	return backendKey{srcObj: serviceEntryKey(obj)}
-}
-
-func (h backendKey) String() string {
-	return h.host + ":" + strconv.Itoa(int(h.port)) + "~" + h.srcObj
 }
 
 func (s seSelector) ResourceName() string {

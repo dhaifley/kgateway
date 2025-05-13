@@ -42,7 +42,7 @@ func (n *NotFoundError) Error() string {
 type BackendIndex struct {
 
 	// availableBackends are the backends as supplied by backend-contributed plugins.
-	// Any policies here are applied direclty at Backend generation and not attached via
+	// Any policies here are attached directly at Backend generation and not attached via
 	// policy index. Use availableBackendsWithPolicy when you need policy.
 	availableBackends map[schema.GroupKind]krt.Collection[ir.BackendObjectIR]
 	// aliasIndex indexes the availableBackends for a given GK by the BackendObjectIR's Alias
@@ -183,7 +183,6 @@ func (i *BackendIndex) getBackendFromAlias(kctx krt.HandlerContext, gk schema.Gr
 		}))...)
 
 		didFetch = true
-
 	}
 
 	if !didFetch {
