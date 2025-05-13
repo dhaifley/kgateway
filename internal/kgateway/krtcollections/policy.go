@@ -105,9 +105,14 @@ func (i *BackendIndex) BackendsWithPolicy() []krt.Collection[ir.BackendObjectIR]
 // policies attached.
 func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.BackendObjectIR], aliasKinds ...schema.GroupKind) {
 	backendsWithPoliciesCol := krt.NewCollection(col, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) *ir.BackendObjectIR {
-		policies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, backendObj.ObjectSource, "")
+		policies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, backendObj.ObjectSource, "", false)
 		for _, aliasObjSrc := range backendObj.Aliases {
-			aliasPolicies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, aliasObjSrc, "")
+			if aliasObjSrc.Namespace == "" {
+				// targeting policies must be namespace local
+				// some aliases might be "global" but for policy purposes, give them the src namespace
+				aliasObjSrc.Namespace = backendObj.GetNamespace()
+			}
+			aliasPolicies := i.policies.getTargetingPoliciesForBackends(kctx, extensionsplug.BackendAttachmentPoint, aliasObjSrc, "", true)
 			policies = append(policies, aliasPolicies...)
 		}
 		backendObj.AttachedPolicies = toAttachedPolicies(policies)
@@ -421,8 +426,9 @@ func (p *PolicyIndex) getTargetingPoliciesForBackends(
 	pnt extensionsplug.AttachmentPoints,
 	targetRef ir.ObjectSource,
 	sectionName string,
+	excludeGlobal bool,
 ) []ir.PolicyAtt {
-	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, true)
+	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, true, excludeGlobal)
 }
 
 func (p *PolicyIndex) getTargetingPolicies(
@@ -431,7 +437,7 @@ func (p *PolicyIndex) getTargetingPolicies(
 	targetRef ir.ObjectSource,
 	sectionName string,
 ) []ir.PolicyAtt {
-	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, false)
+	return p.getTargetingPoliciesMaybeForBackends(kctx, pnt, targetRef, sectionName, false, false)
 }
 
 func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
@@ -440,16 +446,19 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 	targetRef ir.ObjectSource,
 	sectionName string,
 	onlyBackends bool,
+	excludeGlobal bool,
 ) []ir.PolicyAtt {
 	var ret []ir.PolicyAtt
-	for _, gp := range p.globalPolicies {
-		if gp.points.Has(pnt) {
-			if p := gp.ir(kctx, pnt); p != nil {
-				gpAtt := ir.PolicyAtt{
-					PolicyIr:  p,
-					GroupKind: gp.GroupKind,
+	if !excludeGlobal {
+		for _, gp := range p.globalPolicies {
+			if gp.points.Has(pnt) {
+				if p := gp.ir(kctx, pnt); p != nil {
+					gpAtt := ir.PolicyAtt{
+						PolicyIr:  p,
+						GroupKind: gp.GroupKind,
+					}
+					ret = append(ret, gpAtt)
 				}
-				ret = append(ret, gpAtt)
 			}
 		}
 	}
