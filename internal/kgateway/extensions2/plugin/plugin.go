@@ -4,7 +4,6 @@ import "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 
 type (
 	Plugin                 = pluginsdk.Plugin
-	GetBackendForRefPlugin = pluginsdk.GetBackendForRefPlugin
 	ProcessBackend         = pluginsdk.ProcessBackend
 	BackendPlugin          = pluginsdk.BackendPlugin
 	KGwTranslator          = pluginsdk.KGwTranslator

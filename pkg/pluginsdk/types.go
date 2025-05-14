@@ -29,7 +29,6 @@ func (a AttachmentPoints) Has(p AttachmentPoints) bool {
 }
 
 type (
-	GetBackendForRefPlugin func(kctx krt.HandlerContext, key ir.ObjectSource, port int32) *ir.BackendObjectIR
 	ProcessBackend         func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster)
 	EndpointPlugin         func(
 		kctx krt.HandlerContext,
@@ -62,7 +61,6 @@ type PolicyPlugin struct {
 	Name                      string
 	NewGatewayTranslationPass func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass
 
-	GetBackendForRef          GetBackendForRefPlugin
 	ProcessBackend            ProcessBackend
 	PerClientProcessBackend   PerClientProcessBackend
 	PerClientProcessEndpoints EndpointPlugin
