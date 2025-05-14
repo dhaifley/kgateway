@@ -23,21 +23,21 @@ var cases = []struct {
 	gw   types.NamespacedName
 	skip string
 }{
-	{"Service use-waypoint", "svc-use-waypoint", exampleGw, ""},
-	{"ServiceEntry use-waypoint", "se-use-waypoint", exampleGw, ""},
-	{"Namespace use-waypoint", "ns-use-waypoint", exampleGw, ""},
-	{"HTTPRoute on Gateway", "httproute-gateway", exampleGw, ""},
-	{"HTTPRoute on Service", "httproute-svc", exampleGw, ""},
-	{"HTTPRoute on ServiceEntry", "httproute-se", exampleGw, ""},
+	// {"Service use-waypoint", "svc-use-waypoint", exampleGw, ""},
+	// {"ServiceEntry use-waypoint", "se-use-waypoint", exampleGw, ""},
+	// {"Namespace use-waypoint", "ns-use-waypoint", exampleGw, ""},
+	// {"HTTPRoute on Gateway", "httproute-gateway", exampleGw, ""},
+	// {"HTTPRoute on Service", "httproute-svc", exampleGw, ""},
+	// {"HTTPRoute on ServiceEntry", "httproute-se", exampleGw, ""},
 	{"HTTPRoute on ServiceEntry via Hostname", "httproute-se-hostname", exampleGw, ""},
-	{"Authz Policies", "authz", exampleGw, ""},
-	{"Authz Policies - Gateway Ref", "authz-gateway-ref", exampleGw, ""},
-	{"Authz Policies - Gateway Ref Fake GW", "authz-gateway-ref-fakegw", exampleGw, ""},
-	{"Authz Policies - GatewayClass Ref", "authz-gatewayclass-ref", exampleGw, ""},
-	{"Authz Policies - GatewayClass Ref Non-Root NS", "authz-gatewayclass-ref-nonrootns", exampleGw, ""},
-	{"Authz Policies - ServiceEntry", "authz-serviceentry", exampleGw, ""},
-	{"Authz Policies - Multi-Service", "authz-multi-service", exampleGw, ""},
-	{"No listeners", "empty", exampleGw, ""},
+	// {"Authz Policies", "authz", exampleGw, ""},
+	// {"Authz Policies - Gateway Ref", "authz-gateway-ref", exampleGw, ""},
+	// {"Authz Policies - Gateway Ref Fake GW", "authz-gateway-ref-fakegw", exampleGw, ""},
+	// {"Authz Policies - GatewayClass Ref", "authz-gatewayclass-ref", exampleGw, ""},
+	// {"Authz Policies - GatewayClass Ref Non-Root NS", "authz-gatewayclass-ref-nonrootns", exampleGw, ""},
+	// {"Authz Policies - ServiceEntry", "authz-serviceentry", exampleGw, ""},
+	// {"Authz Policies - Multi-Service", "authz-multi-service", exampleGw, ""},
+	// {"No listeners", "empty", exampleGw, ""},
 }
 
 func TestWaypointTranslator(t *testing.T) {

@@ -574,6 +574,11 @@ func (r *RefGrantIndex) ReferenceAllowed(kctx krt.HandlerContext, fromgk schema.
 	to.Group = emptyIfCore(to.Group)
 	fromgk.Group = emptyIfCore(fromgk.Group)
 
+	// no good way to to refGrant here unless we do it _after_ resolving the ref
+	if to.Namespace == "" && wellknown.GlobalRefGKs.Has(to.GetGroupKind()) {
+		return true
+	}
+
 	key := refGrantIndexKey{
 		RefGrantNs: to.Namespace,
 		ToGK:       schema.GroupKind{Group: to.Group, Kind: to.Kind},
@@ -935,10 +940,18 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 }
 
 func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectSource {
+	defNs := fromns
+	gk := schema.GroupKind{
+		Group: strOr(ref.Group, ""),
+		Kind:  strOr(ref.Kind, "Service"),
+	}
+	if wellknown.GlobalRefGKs.Has(gk) {
+		defNs = ""
+	}
 	return ir.ObjectSource{
-		Group:     strOr(ref.Group, ""),
-		Kind:      strOr(ref.Kind, "Service"),
-		Namespace: strOr(ref.Namespace, fromns),
+		Group:     gk.Group,
+		Kind:      gk.Kind,
+		Namespace: strOr(ref.Namespace, defNs),
 		Name:      string(ref.Name),
 	}
 }
