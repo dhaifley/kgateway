@@ -135,9 +135,9 @@ func BuildServiceEntryBackendObjectIR(
 		AttachedPolicies: ir.AttachedPolicies{},
 
 		// TODO this is a hack so we don't have key conflicts in krt since we
-		// build per-hostname backends. This means the generic `getBackend`
-		// in policy.go will never work, and we resolve the direct
-		// ServiceEntry backendRefs in our backendref plugin.
+		// build per-hostname backends; since getBackend tries to use krt-key by
+		// default, it will never find ServiceEntry, so we "alias" ServiceEntry to ServiceEntry
+		// to get the ref-index-based logic instead of the krt-key based lookup.
 		ExtraKey: hostname,
 	}
 }
