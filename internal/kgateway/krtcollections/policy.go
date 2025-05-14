@@ -156,7 +156,12 @@ func (i *BackendIndex) getBackend(kctx krt.HandlerContext, gk schema.GroupKind, 
 
 	up := krt.FetchOne(kctx, col, krt.FilterKey(ir.BackendResourceName(key, port, "")))
 	if up == nil {
-		return i.getBackendFromAlias(kctx, gk, n, port)
+		var err error
+		if up, err = i.getBackendFromAlias(kctx, gk, n, port); err != nil {
+			// getBackendFromAlias returns ErrUnknownBackendKind when there are no aliases
+			// so return our own NotFoundError here
+			return nil, &NotFoundError{NotFoundObj: key}
+		}
 	}
 
 	return up, nil
@@ -164,6 +169,15 @@ func (i *BackendIndex) getBackend(kctx krt.HandlerContext, gk schema.GroupKind, 
 
 func (i *BackendIndex) getBackendFromAlias(kctx krt.HandlerContext, gk schema.GroupKind, n types.NamespacedName, port int32) (*ir.BackendObjectIR, error) {
 	actualGks := i.gkAliases[gk]
+
+	key := backendKey{
+		port: port,
+		ObjectSource: ir.ObjectSource{
+			Group:     gk.Group,
+			Kind:      gk.Kind,
+			Namespace: n.Namespace,
+			Name:      n.Name},
+	}
 
 	var didFetch bool
 	var results []ir.BackendObjectIR
@@ -173,14 +187,7 @@ func (i *BackendIndex) getBackendFromAlias(kctx krt.HandlerContext, gk schema.Gr
 			continue
 		}
 
-		results = append(results, krt.Fetch(kctx, col, krt.FilterIndex(i.aliasIndex[actualGk], backendKey{
-			port: port,
-			ObjectSource: ir.ObjectSource{
-				Group:     gk.Group,
-				Kind:      gk.Kind,
-				Namespace: n.Namespace,
-				Name:      n.Name},
-		}))...)
+		results = append(results, krt.Fetch(kctx, col, krt.FilterIndex(i.aliasIndex[actualGk], key))...)
 
 		didFetch = true
 	}
@@ -204,7 +211,7 @@ func (i *BackendIndex) getBackendFromAlias(kctx krt.HandlerContext, gk schema.Gr
 	}
 
 	if out == nil {
-		return nil, ErrUnknownBackendKind
+		return nil, &NotFoundError{NotFoundObj: key.ObjectSource}
 	}
 
 	return out, nil
