@@ -22,13 +22,13 @@ import (
 func NewTranslator(queries query.GatewayQueries) extensionsplug.KGwTranslator {
 	return &translator{
 		queries: queries,
-		metrics: metrics.NewTranslatorMetrics("TranslateProxy"),
+		metrics: metrics.NewTranslatorRecorder("TranslateProxy"),
 	}
 }
 
 type translator struct {
 	queries query.GatewayQueries
-	metrics *metrics.TranslatorMetrics
+	metrics metrics.TranslatorRecorder
 }
 
 func (t *translator) Translate(
