@@ -73,7 +73,7 @@ func (t *translator) Translate(
 		reporter,
 	)
 
-	t.metrics.SetResourceCount(gateway.Namespace, "Listener", len(listeners))
+	t.metrics.SetResources(gateway.Namespace, "Listener", len(listeners))
 
 	return &ir.GatewayIR{
 		SourceObject:         gateway,
