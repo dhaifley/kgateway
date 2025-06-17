@@ -162,21 +162,6 @@ func TestCollectionResources(t *testing.T) {
 			Value:  3,
 		},
 	})
-
-	// Test ResetResources.
-	m.ResetResources("route")
-
-	currentMetrics = metricstest.MustGatherMetrics(t)
-	currentMetrics.AssertMetrics("kgateway_collection_resources", []metricstest.ExpectMetric{
-		&metricstest.ExpectedMetric{
-			Labels: expectedRouteLabels,
-			Value:  0,
-		},
-		&metricstest.ExpectedMetric{
-			Labels: expectedGatewayLabels,
-			Value:  3,
-		},
-	})
 }
 
 func TestTransformStartNotActive(t *testing.T) {

@@ -1,7 +1,6 @@
 package krtcollections
 
 import (
-	"sync"
 	"time"
 
 	"istio.io/istio/pkg/kube/controllers"
@@ -105,7 +104,6 @@ func (r CollectionResourcesMetricLabels) toMetricsLabels(collection string) []me
 // CollectionMetricsRecorder defines the interface for recording collection metrics.
 type CollectionMetricsRecorder interface {
 	TransformStart() func(error)
-	ResetResources(resource string)
 	SetResources(labels CollectionResourcesMetricLabels, count int)
 	IncResources(labels CollectionResourcesMetricLabels)
 	DecResources(labels CollectionResourcesMetricLabels)
@@ -117,8 +115,6 @@ type collectionMetrics struct {
 	transformsTotal   metrics.Counter
 	transformDuration metrics.Histogram
 	resources         metrics.Gauge
-	resourceNames     map[string]map[string]map[string]struct{}
-	resourcesLock     sync.Mutex
 }
 
 var _ CollectionMetricsRecorder = &collectionMetrics{}
@@ -134,8 +130,6 @@ func NewCollectionMetricsRecorder(collectionName string) CollectionMetricsRecord
 		transformsTotal:   transformsTotal,
 		transformDuration: transformDuration,
 		resources:         collectionResources,
-		resourceNames:     make(map[string]map[string]map[string]struct{}),
-		resourcesLock:     sync.Mutex{},
 	}
 
 	return m
@@ -164,68 +158,18 @@ func (m *collectionMetrics) TransformStart() func(error) {
 	}
 }
 
-// ResetResources resets the resource count gauge for a specified resource.
-func (m *collectionMetrics) ResetResources(resource string) {
-	m.resourcesLock.Lock()
-
-	namespaces, exists := m.resourceNames[resource]
-	if !exists {
-		m.resourcesLock.Unlock()
-
-		return
-	}
-
-	delete(m.resourceNames, resource)
-
-	m.resourcesLock.Unlock()
-
-	for namespace, names := range namespaces {
-		for name := range names {
-			m.resources.Set(0, []metrics.Label{
-				{Name: collectionNameLabel, Value: m.collectionName},
-				{Name: "name", Value: name},
-				{Name: "namespace", Value: namespace},
-				{Name: "resource", Value: resource},
-			}...)
-		}
-	}
-}
-
-// updateResourceNames updates the internal map of resource names.
-func (m *collectionMetrics) updateResourceNames(labels CollectionResourcesMetricLabels) {
-	m.resourcesLock.Lock()
-
-	if _, exists := m.resourceNames[labels.Resource]; !exists {
-		m.resourceNames[labels.Resource] = make(map[string]map[string]struct{})
-	}
-
-	if _, exists := m.resourceNames[labels.Resource][labels.Namespace]; !exists {
-		m.resourceNames[labels.Resource][labels.Namespace] = make(map[string]struct{})
-	}
-
-	m.resourceNames[labels.Resource][labels.Namespace][labels.Name] = struct{}{}
-
-	m.resourcesLock.Unlock()
-}
-
 // SetResources updates the resource count gauge.
 func (m *collectionMetrics) SetResources(labels CollectionResourcesMetricLabels, count int) {
-	m.updateResourceNames(labels)
-
 	m.resources.Set(float64(count), labels.toMetricsLabels(m.collectionName)...)
 }
 
 // IncResources increments the resource count gauge.
 func (m *collectionMetrics) IncResources(labels CollectionResourcesMetricLabels) {
-	m.updateResourceNames(labels)
-
 	m.resources.Add(1, labels.toMetricsLabels(m.collectionName)...)
 }
 
 // DecResources decrements the resource count gauge.
 func (m *collectionMetrics) DecResources(labels CollectionResourcesMetricLabels) {
-	m.updateResourceNames(labels)
-
 	m.resources.Sub(1, labels.toMetricsLabels(m.collectionName)...)
 }
 
