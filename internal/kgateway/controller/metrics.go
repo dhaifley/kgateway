@@ -114,5 +114,6 @@ var _ controllerMetricsRecorder = &nullControllerMetricsRecorder{}
 // This is provided for testing purposes only.
 func ResetMetrics() {
 	reconciliationsTotal.Reset()
+	reconciliationsRunning.Reset()
 	reconcileDuration.Reset()
 }

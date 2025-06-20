@@ -113,7 +113,7 @@ var _ = Describe("GwControllerMetrics", func() {
 			gathered := metricstest.MustGatherMetrics(GinkgoT())
 
 			gathered.AssertMetricNotExists("kgateway_controller_reconciliations_total")
-
+			gathered.AssertMetricNotExists("kgateway_controller_reconciliations_running")
 			gathered.AssertMetricNotExists("kgateway_controller_reconcile_duration_seconds")
 		})
 
