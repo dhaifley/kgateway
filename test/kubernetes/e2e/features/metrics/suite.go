@@ -73,9 +73,11 @@ func (s *testingSuite) TestMetrics() {
 			Body: gomega.And(
 				gomega.MatchRegexp(`kgateway_collection_transform_duration_seconds_count\{collection=\"Gateways\"\} \d+`),
 				gomega.MatchRegexp(`kgateway_collection_transforms_total\{collection=\"Gateways\",result=\"success\"\} \d+`),
+				gomega.MatchRegexp(`kgateway_collection_transforms_running\{collection=\"Gateways\"} \d+`),
 				gomega.MatchRegexp(`kgateway_collection_resources\{collection=\"Gateways\",name=\"gw1\",namespace=\"default\",resource=\"Gateway\"\} \d+`),
 				gomega.MatchRegexp(`kgateway_controller_reconcile_duration_seconds_count\{controller=\"gateway\"\} \d+`),
 				gomega.MatchRegexp(`kgateway_controller_reconciliations_total\{controller=\"gateway\",result=\"success\"\} \d+`),
+				gomega.MatchRegexp(`kgateway_controller_reconciliations_running\{controller=\"gateway\"} \d+`),
 				gomega.MatchRegexp(`kgateway_status_syncer_resources\{name=\"gw1\",namespace=\"default\",resource=\"Gateway\",syncer=\"GatewayStatusSyncer\"\} \d+`),
 				gomega.MatchRegexp(`kgateway_status_syncer_status_sync_duration_seconds_count\{syncer=\"GatewayStatusSyncer\"\} \d+`),
 				gomega.MatchRegexp(`kgateway_status_syncer_status_syncs_total\{result=\"success\",syncer=\"GatewayStatusSyncer\"\} \d+`),

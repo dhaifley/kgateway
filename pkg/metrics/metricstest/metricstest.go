@@ -63,6 +63,13 @@ func Between(minVal, maxVal float64) func(value float64) bool {
 	}
 }
 
+// Equal returns a function that checks if a value is equal to another value.
+func Equal(val float64) func(value float64) bool {
+	return func(value float64) bool {
+		return value == val
+	}
+}
+
 var _ ExpectMetric = &ExpectedMetricValueTest{}
 
 // Gathered metrics interface.

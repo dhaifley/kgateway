@@ -36,7 +36,14 @@ var (
 		},
 		[]string{collectionNameLabel},
 	)
-
+	transformsRunning = metrics.NewGauge(
+		metrics.GaugeOpts{
+			Subsystem: collectionSubsystem,
+			Name:      "transforms_running",
+			Help:      "Number of transforms currently running",
+		},
+		[]string{collectionNameLabel},
+	)
 	collectionResources = metrics.NewGauge(
 		metrics.GaugeOpts{
 			Subsystem: collectionSubsystem,
@@ -114,6 +121,7 @@ type collectionMetrics struct {
 	collectionName    string
 	transformsTotal   metrics.Counter
 	transformDuration metrics.Histogram
+	transformsRunning metrics.Gauge
 	resources         metrics.Gauge
 }
 
@@ -129,6 +137,7 @@ func NewCollectionMetricsRecorder(collectionName string) CollectionMetricsRecord
 		collectionName:    collectionName,
 		transformsTotal:   transformsTotal,
 		transformDuration: transformDuration,
+		transformsRunning: transformsRunning,
 		resources:         collectionResources,
 	}
 
@@ -139,6 +148,9 @@ func NewCollectionMetricsRecorder(collectionName string) CollectionMetricsRecord
 // collection and returns a function called at the end to complete metrics recording.
 func (m *collectionMetrics) TransformStart() func(error) {
 	start := time.Now()
+
+	m.transformsRunning.Add(1,
+		metrics.Label{Name: collectionNameLabel, Value: m.collectionName})
 
 	return func(err error) {
 		duration := time.Since(start)
@@ -155,6 +167,9 @@ func (m *collectionMetrics) TransformStart() func(error) {
 			{Name: collectionNameLabel, Value: m.collectionName},
 			{Name: "result", Value: result},
 		}...)
+
+		m.transformsRunning.Sub(1,
+			metrics.Label{Name: collectionNameLabel, Value: m.collectionName})
 	}
 }
 
@@ -195,5 +210,6 @@ func (m *nullCollectionMetricsRecorder) DecResources(labels CollectionResourcesM
 func ResetMetrics() {
 	transformsTotal.Reset()
 	transformDuration.Reset()
+	transformsRunning.Reset()
 	collectionResources.Reset()
 }

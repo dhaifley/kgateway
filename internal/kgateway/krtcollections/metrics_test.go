@@ -55,10 +55,26 @@ func TestTransformStart_Success(t *testing.T) {
 	m := NewCollectionMetricsRecorder("test-collection")
 
 	finishFunc := m.TransformStart()
-	time.Sleep(10 * time.Millisecond)
-	finishFunc(nil)
 
 	currentMetrics := metricstest.MustGatherMetrics(t)
+
+	currentMetrics.AssertMetric("kgateway_collection_transforms_running", &metricstest.ExpectedMetric{
+		Labels: []metrics.Label{
+			{Name: "collection", Value: "test-collection"},
+		},
+		Value: 1,
+	})
+
+	finishFunc(nil)
+
+	currentMetrics = metricstest.MustGatherMetrics(t)
+
+	currentMetrics.AssertMetric("kgateway_collection_transforms_running", &metricstest.ExpectedMetric{
+		Labels: []metrics.Label{
+			{Name: "collection", Value: "test-collection"},
+		},
+		Value: 0,
+	})
 
 	currentMetrics.AssertMetric("kgateway_collection_transforms_total", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
@@ -80,9 +96,26 @@ func TestTransformStart_Error(t *testing.T) {
 	m := NewCollectionMetricsRecorder("test-collection")
 
 	finishFunc := m.TransformStart()
-	finishFunc(assert.AnError)
 
 	currentMetrics := metricstest.MustGatherMetrics(t)
+
+	currentMetrics.AssertMetric("kgateway_collection_transforms_running", &metricstest.ExpectedMetric{
+		Labels: []metrics.Label{
+			{Name: "collection", Value: "test-collection"},
+		},
+		Value: 1,
+	})
+
+	finishFunc(assert.AnError)
+
+	currentMetrics = metricstest.MustGatherMetrics(t)
+
+	currentMetrics.AssertMetric("kgateway_collection_transforms_running", &metricstest.ExpectedMetric{
+		Labels: []metrics.Label{
+			{Name: "collection", Value: "test-collection"},
+		},
+		Value: 0,
+	})
 
 	currentMetrics.AssertMetric("kgateway_collection_transforms_total", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
@@ -180,6 +213,8 @@ func TestTransformStartNotActive(t *testing.T) {
 
 	currentMetrics.AssertMetricNotExists("kgateway_collection_transforms_total")
 	currentMetrics.AssertMetricNotExists("kgateway_collection_transform_duration_seconds")
+	currentMetrics.AssertMetricNotExists("kgateway_collection_transforms_running")
+	currentMetrics.AssertMetricNotExists("kgateway_collection_resources")
 }
 
 func TestGatewaysCollectionMetrics(t *testing.T) {
@@ -262,6 +297,13 @@ func TestGatewaysCollectionMetrics(t *testing.T) {
 					{Name: "result", Value: "success"},
 				},
 				Value: 1,
+			})
+
+			gathered.AssertMetric("kgateway_collection_transforms_running", &metricstest.ExpectedMetric{
+				Labels: []metrics.Label{
+					{Name: "collection", Value: "Gateways"},
+				},
+				Value: 0,
 			})
 
 			gathered.AssertMetrics("kgateway_collection_resources", []metricstest.ExpectMetric{
@@ -380,6 +422,13 @@ func TestK8SEndpointsCollectionMetrics(t *testing.T) {
 					{Name: "result", Value: "success"},
 				},
 				Value: 1,
+			})
+
+			gathered.AssertMetric("kgateway_collection_transforms_running", &metricstest.ExpectedMetric{
+				Labels: []metrics.Label{
+					{Name: "collection", Value: "K8sEndpoints"},
+				},
+				Value: 0,
 			})
 
 			gathered.AssertMetricsLabels("kgateway_collection_transform_duration_seconds", [][]metrics.Label{{

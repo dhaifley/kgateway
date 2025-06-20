@@ -31,6 +31,14 @@ var (
 		},
 		[]string{controllerNameLabel},
 	)
+	reconciliationsRunning = metrics.NewGauge(
+		metrics.GaugeOpts{
+			Subsystem: controllerSubsystem,
+			Name:      "reconciliations_running",
+			Help:      "Number of reconciliations currently running",
+		},
+		[]string{controllerNameLabel},
+	)
 )
 
 // controllerMetricsRecorder defines the interface for recording controller metrics.
@@ -40,9 +48,10 @@ type controllerMetricsRecorder interface {
 
 // controllerMetrics provides metrics for controller operations.
 type controllerMetrics struct {
-	controllerName       string
-	reconciliationsTotal metrics.Counter
-	reconcileDuration    metrics.Histogram
+	controllerName         string
+	reconciliationsTotal   metrics.Counter
+	reconcileDuration      metrics.Histogram
+	reconciliationsRunning metrics.Gauge
 }
 
 var _ controllerMetricsRecorder = &controllerMetrics{}
@@ -54,9 +63,10 @@ func newControllerMetricsRecorder(controllerName string) controllerMetricsRecord
 	}
 
 	m := &controllerMetrics{
-		controllerName:       controllerName,
-		reconciliationsTotal: reconciliationsTotal,
-		reconcileDuration:    reconcileDuration,
+		controllerName:         controllerName,
+		reconciliationsTotal:   reconciliationsTotal,
+		reconcileDuration:      reconcileDuration,
+		reconciliationsRunning: reconciliationsRunning,
 	}
 
 	return m
@@ -67,6 +77,9 @@ func newControllerMetricsRecorder(controllerName string) controllerMetricsRecord
 // complete metrics recording.
 func (m *controllerMetrics) reconcileStart() func(error) {
 	start := time.Now()
+
+	m.reconciliationsRunning.Add(1,
+		metrics.Label{Name: controllerNameLabel, Value: m.controllerName})
 
 	return func(err error) {
 		duration := time.Since(start)
@@ -83,6 +96,9 @@ func (m *controllerMetrics) reconcileStart() func(error) {
 			{Name: controllerNameLabel, Value: m.controllerName},
 			{Name: "result", Value: result},
 		}...)
+
+		m.reconciliationsRunning.Sub(1,
+			metrics.Label{Name: controllerNameLabel, Value: m.controllerName})
 	}
 }
 
