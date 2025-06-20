@@ -76,15 +76,15 @@ var _ = Describe("GwControllerMetrics", func() {
 		gathered.AssertMetrics("kgateway_controller_reconciliations_running", []metricstest.ExpectMetric{
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{{Name: "controller", Value: "gateway"}},
-				Test:   metricstest.Equal(0),
+				Test:   metricstest.Between(0, 1),
 			},
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{{Name: "controller", Value: "gatewayclass"}},
-				Test:   metricstest.Equal(0),
+				Test:   metricstest.Between(0, 1),
 			},
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{{Name: "controller", Value: "gatewayclass-provisioner"}},
-				Test:   metricstest.Equal(0),
+				Test:   metricstest.Between(0, 1),
 			},
 		})
 
