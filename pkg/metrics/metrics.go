@@ -287,8 +287,13 @@ func Active() bool {
 	return atomic.LoadUint32(&disabled) == 0
 }
 
+// RegistererGatherer combines the Registerer and Gatherer interfaces from the
+// Prometheus metrics library.
+// These values can be used as metrics registries.
+type RegistererGatherer metrics.RegistererGatherer
+
 // Registry returns the global metrics registry.
-func Registry() metrics.RegistererGatherer {
+func Registry() RegistererGatherer {
 	registryLock.RLock()
 	defer registryLock.RUnlock()
 
@@ -296,7 +301,7 @@ func Registry() metrics.RegistererGatherer {
 }
 
 // SetRegistry sets the global metrics registry.
-func SetRegistry(r metrics.RegistererGatherer) {
+func SetRegistry(r RegistererGatherer) {
 	registryLock.Lock()
 	defer registryLock.Unlock()
 
