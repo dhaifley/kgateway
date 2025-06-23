@@ -3,40 +3,38 @@ package metrics_test
 import (
 	"testing"
 
+	. "github.com/kgateway-dev/kgateway/v2/pkg/metrics"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	crmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
-	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )
 
 func TestCounterInterface(t *testing.T) {
-	crmetrics.Registry = prometheus.NewRegistry()
+	SetRegistry(prometheus.NewRegistry())
 
-	opts := metrics.CounterOpts{
+	opts := CounterOpts{
 		Name: "test_total",
 		Help: "A test counter metric",
 	}
 
-	counter := metrics.NewCounter(opts, []string{"label1", "label2"})
+	counter := NewCounter(opts, []string{"label1", "label2"})
 
-	counter.Inc(metrics.Label{Name: "label1", Value: "value1"}, metrics.Label{Name: "label2", Value: "value2"})
+	counter.Inc(Label{Name: "label1", Value: "value1"}, Label{Name: "label2", Value: "value2"})
 
 	gathered := metricstest.MustGatherMetrics(t)
 	gathered.AssertMetric("kgateway_test_total", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
+		Labels: []Label{
 			{Name: "label1", Value: "value1"},
 			{Name: "label2", Value: "value2"},
 		},
 		Value: 1.0,
 	})
 
-	counter.Add(5.0, metrics.Label{Name: "label1", Value: "value1"}, metrics.Label{Name: "label2", Value: "value2"})
+	counter.Add(5.0, Label{Name: "label1", Value: "value1"}, Label{Name: "label2", Value: "value2"})
 	gathered = metricstest.MustGatherMetrics(t)
 	gathered.AssertMetric("kgateway_test_total", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
+		Labels: []Label{
 			{Name: "label1", Value: "value1"},
 			{Name: "label2", Value: "value2"},
 		},
@@ -49,21 +47,21 @@ func TestCounterInterface(t *testing.T) {
 }
 
 func TestCounterPartialLabels(t *testing.T) {
-	crmetrics.Registry = prometheus.NewRegistry()
+	SetRegistry(prometheus.NewRegistry())
 
-	opts := metrics.CounterOpts{
+	opts := CounterOpts{
 		Name: "test_total",
 		Help: "A test counter metric with partial labels",
 	}
 
-	counter := metrics.NewCounter(opts, []string{"label1", "label2", "label3"})
+	counter := NewCounter(opts, []string{"label1", "label2", "label3"})
 
 	// Test with only some labels provided.
-	counter.Inc(metrics.Label{Name: "label3", Value: "value3"}, metrics.Label{Name: "label1", Value: "value1"})
+	counter.Inc(Label{Name: "label3", Value: "value3"}, Label{Name: "label1", Value: "value1"})
 
 	gathered := metricstest.MustGatherMetrics(t)
 	gathered.AssertMetric("kgateway_test_total", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
+		Labels: []Label{
 			{Name: "label1", Value: "value1"},
 			{Name: "label2", Value: ""},
 			{Name: "label3", Value: "value3"},
@@ -73,61 +71,61 @@ func TestCounterPartialLabels(t *testing.T) {
 }
 
 func TestCounterNoLabels(t *testing.T) {
-	crmetrics.Registry = prometheus.NewRegistry()
+	SetRegistry(prometheus.NewRegistry())
 
-	opts := metrics.CounterOpts{
+	opts := CounterOpts{
 		Name: "test_total",
 		Help: "A test counter metric with no labels",
 	}
 
-	counter := metrics.NewCounter(opts, []string{})
+	counter := NewCounter(opts, []string{})
 
 	counter.Inc()
 	counter.Add(2.5)
 
 	gathered := metricstest.MustGatherMetrics(t)
 	gathered.AssertMetric("kgateway_test_total", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{},
+		Labels: []Label{},
 		Value:  3.5,
 	})
 }
 
 func TestCounterRegistrationPanic(t *testing.T) {
-	crmetrics.Registry = prometheus.NewRegistry()
+	SetRegistry(prometheus.NewRegistry())
 
-	opts := metrics.CounterOpts{
+	opts := CounterOpts{
 		Name: "test_total",
 		Help: "A test counter metric",
 	}
 
-	metrics.NewCounter(opts, []string{})
+	NewCounter(opts, []string{})
 
 	// Attempting to create a counter with the same name should panic.
 	assert.Panics(t, func() {
-		metrics.NewCounter(opts, []string{})
+		NewCounter(opts, []string{})
 	})
 }
 
 func TestHistogramInterface(t *testing.T) {
-	crmetrics.Registry = prometheus.NewRegistry()
+	SetRegistry(prometheus.NewRegistry())
 
-	opts := metrics.HistogramOpts{
+	opts := HistogramOpts{
 		Name:    "test_duration_seconds",
 		Help:    "A test histogram metric",
 		Buckets: prometheus.DefBuckets,
 	}
 
-	histogram := metrics.NewHistogram(opts, []string{"label1", "label2"})
+	histogram := NewHistogram(opts, []string{"label1", "label2"})
 
-	histogram.Observe(1.5, metrics.Label{Name: "label1", Value: "value1"}, metrics.Label{Name: "label2", Value: "value2"})
-	histogram.Observe(2.5, metrics.Label{Name: "label1", Value: "value1"}, metrics.Label{Name: "label2", Value: "value2"})
+	histogram.Observe(1.5, Label{Name: "label1", Value: "value1"}, Label{Name: "label2", Value: "value2"})
+	histogram.Observe(2.5, Label{Name: "label1", Value: "value1"}, Label{Name: "label2", Value: "value2"})
 
 	gathered := metricstest.MustGatherMetrics(t)
 	gathered.AssertMetricHistogramValue("kgateway_test_duration_seconds", metricstest.HistogramMetricOutput{
 		SampleCount: 2,
 		SampleSum:   4.0,
 	})
-	gathered.AssertMetricLabels("kgateway_test_duration_seconds", []metrics.Label{
+	gathered.AssertMetricLabels("kgateway_test_duration_seconds", []Label{
 		{Name: "label1", Value: "value1"},
 		{Name: "label2", Value: "value2"},
 	})
@@ -138,25 +136,25 @@ func TestHistogramInterface(t *testing.T) {
 }
 
 func TestHistogramPartialLabels(t *testing.T) {
-	crmetrics.Registry = prometheus.NewRegistry()
+	SetRegistry(prometheus.NewRegistry())
 
-	opts := metrics.HistogramOpts{
+	opts := HistogramOpts{
 		Name:    "test_duration_seconds_partial",
 		Help:    "A test histogram metric with partial labels",
 		Buckets: prometheus.DefBuckets,
 	}
 
-	histogram := metrics.NewHistogram(opts, []string{"label1", "label2", "label3"})
+	histogram := NewHistogram(opts, []string{"label1", "label2", "label3"})
 
 	// Test with only some labels provided.
-	histogram.Observe(3.14, metrics.Label{Name: "label1", Value: "value1"}, metrics.Label{Name: "label3", Value: "value3"})
+	histogram.Observe(3.14, Label{Name: "label1", Value: "value1"}, Label{Name: "label3", Value: "value3"})
 
 	gathered := metricstest.MustGatherMetrics(t)
 	gathered.AssertMetricHistogramValue("kgateway_test_duration_seconds_partial", metricstest.HistogramMetricOutput{
 		SampleCount: 1,
 		SampleSum:   3.14,
 	})
-	gathered.AssertMetricLabels("kgateway_test_duration_seconds_partial", []metrics.Label{
+	gathered.AssertMetricLabels("kgateway_test_duration_seconds_partial", []Label{
 		{Name: "label1", Value: "value1"},
 		{Name: "label2", Value: ""},
 		{Name: "label3", Value: "value3"},
@@ -164,15 +162,15 @@ func TestHistogramPartialLabels(t *testing.T) {
 }
 
 func TestHistogramNoLabels(t *testing.T) {
-	crmetrics.Registry = prometheus.NewRegistry()
+	SetRegistry(prometheus.NewRegistry())
 
-	opts := metrics.HistogramOpts{
+	opts := HistogramOpts{
 		Name:    "test_duration_seconds_no_labels",
 		Help:    "A test histogram metric with no labels",
 		Buckets: []float64{0.1, 0.5, 1.0, 2.5, 5.0, 10.0},
 	}
 
-	histogram := metrics.NewHistogram(opts, []string{})
+	histogram := NewHistogram(opts, []string{})
 
 	histogram.Observe(0.5)
 	histogram.Observe(1.5)
@@ -186,33 +184,33 @@ func TestHistogramNoLabels(t *testing.T) {
 }
 
 func TestHistogramRegistrationPanic(t *testing.T) {
-	crmetrics.Registry = prometheus.NewRegistry()
+	SetRegistry(prometheus.NewRegistry())
 
-	opts := metrics.HistogramOpts{
+	opts := HistogramOpts{
 		Name:    "test_duration_seconds_duplicate",
 		Help:    "A test histogram metric",
 		Buckets: prometheus.DefBuckets,
 	}
 
-	metrics.NewHistogram(opts, []string{})
+	NewHistogram(opts, []string{})
 
 	// Attempting to create a histogram with the same name should panic.
 	assert.Panics(t, func() {
-		metrics.NewHistogram(opts, []string{})
+		NewHistogram(opts, []string{})
 	})
 }
 
 func TestGaugeInterface(t *testing.T) {
-	crmetrics.Registry = prometheus.NewRegistry()
+	SetRegistry(prometheus.NewRegistry())
 
-	opts := metrics.GaugeOpts{
+	opts := GaugeOpts{
 		Name: "tests",
 		Help: "A test gauge metric",
 	}
 
-	gauge := metrics.NewGauge(opts, []string{"label1", "label2"})
+	gauge := NewGauge(opts, []string{"label1", "label2"})
 
-	labels := []metrics.Label{
+	labels := []Label{
 		{Name: "label1", Value: "value1"},
 		{Name: "label2", Value: "value2"},
 	}
@@ -245,21 +243,21 @@ func TestGaugeInterface(t *testing.T) {
 }
 
 func TestGaugePartialLabels(t *testing.T) {
-	crmetrics.Registry = prometheus.NewRegistry()
+	SetRegistry(prometheus.NewRegistry())
 
-	opts := metrics.GaugeOpts{
+	opts := GaugeOpts{
 		Name: "tests_partial",
 		Help: "A test gauge metric with partial labels",
 	}
 
-	gauge := metrics.NewGauge(opts, []string{"label1", "label2", "label3"})
+	gauge := NewGauge(opts, []string{"label1", "label2", "label3"})
 
 	// Test with only some labels provided.
-	gauge.Set(42.0, metrics.Label{Name: "label3", Value: "value3"}, metrics.Label{Name: "label1", Value: "value1"})
+	gauge.Set(42.0, Label{Name: "label3", Value: "value3"}, Label{Name: "label1", Value: "value1"})
 
 	gathered := metricstest.MustGatherMetrics(t)
 	gathered.AssertMetric("kgateway_tests_partial", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
+		Labels: []Label{
 			{Name: "label1", Value: "value1"},
 			{Name: "label2", Value: ""},
 			{Name: "label3", Value: "value3"},
@@ -269,14 +267,14 @@ func TestGaugePartialLabels(t *testing.T) {
 }
 
 func TestGaugeNoLabels(t *testing.T) {
-	crmetrics.Registry = prometheus.NewRegistry()
+	SetRegistry(prometheus.NewRegistry())
 
-	opts := metrics.GaugeOpts{
+	opts := GaugeOpts{
 		Name: "tests_no_labels",
 		Help: "A test gauge metric with no labels",
 	}
 
-	gauge := metrics.NewGauge(opts, []string{})
+	gauge := NewGauge(opts, []string{})
 
 	gauge.Set(100.0)
 	gauge.Add(50.0)
@@ -284,83 +282,83 @@ func TestGaugeNoLabels(t *testing.T) {
 
 	gathered := metricstest.MustGatherMetrics(t)
 	gathered.AssertMetric("kgateway_tests_no_labels", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{},
+		Labels: []Label{},
 		Value:  125.0,
 	})
 }
 
 func TestGaugeRegistrationPanic(t *testing.T) {
-	crmetrics.Registry = prometheus.NewRegistry()
+	SetRegistry(prometheus.NewRegistry())
 
-	opts := metrics.GaugeOpts{
+	opts := GaugeOpts{
 		Name: "tests_duplicate",
 		Help: "A test gauge metric",
 	}
 
-	metrics.NewGauge(opts, []string{})
+	NewGauge(opts, []string{})
 
 	// Attempting to create a gauge with the same name should panic.
 	assert.Panics(t, func() {
-		metrics.NewGauge(opts, []string{})
+		NewGauge(opts, []string{})
 	})
 }
 
 func TestGetPromCollector(t *testing.T) {
-	crmetrics.Registry = prometheus.NewRegistry()
+	SetRegistry(prometheus.NewRegistry())
 
-	counterOpts := metrics.CounterOpts{
+	counterOpts := CounterOpts{
 		Name: "test_collector_total",
 		Help: "A test counter for collector testing",
 	}
-	counter := metrics.NewCounter(counterOpts, []string{})
-	counterCollector := metrics.GetPromCollector(counter)
+	counter := NewCounter(counterOpts, []string{})
+	counterCollector := GetPromCollector(counter)
 	require.NotNil(t, counterCollector)
 	assert.IsType(t, &prometheus.CounterVec{}, counterCollector)
 
-	histogramOpts := metrics.HistogramOpts{
+	histogramOpts := HistogramOpts{
 		Name:    "test_collector_duration_seconds",
 		Help:    "A test histogram for collector testing",
 		Buckets: prometheus.DefBuckets,
 	}
-	histogram := metrics.NewHistogram(histogramOpts, []string{})
-	histogramCollector := metrics.GetPromCollector(histogram)
+	histogram := NewHistogram(histogramOpts, []string{})
+	histogramCollector := GetPromCollector(histogram)
 	require.NotNil(t, histogramCollector)
 	assert.IsType(t, &prometheus.HistogramVec{}, histogramCollector)
 
-	gaugeOpts := metrics.GaugeOpts{
+	gaugeOpts := GaugeOpts{
 		Name: "test_collectors",
 		Help: "A test gauge for collector testing",
 	}
-	gauge := metrics.NewGauge(gaugeOpts, []string{})
-	gaugeCollector := metrics.GetPromCollector(gauge)
+	gauge := NewGauge(gaugeOpts, []string{})
+	gaugeCollector := GetPromCollector(gauge)
 	require.NotNil(t, gaugeCollector)
 	assert.IsType(t, &prometheus.GaugeVec{}, gaugeCollector)
 
-	invalidCollector := metrics.GetPromCollector("invalid")
+	invalidCollector := GetPromCollector("invalid")
 	assert.Nil(t, invalidCollector)
 }
 
 func TestValidateLabelsOrder(t *testing.T) {
-	crmetrics.Registry = prometheus.NewRegistry()
+	SetRegistry(prometheus.NewRegistry())
 
-	opts := metrics.CounterOpts{
+	opts := CounterOpts{
 		Name: "test_label_order_total",
 		Help: "A test counter for label order testing",
 	}
 
-	counter := metrics.NewCounter(opts, []string{"z_label", "a_label", "m_label"})
+	counter := NewCounter(opts, []string{"z_label", "a_label", "m_label"})
 
 	// Provide labels in different order than defined.
 	counter.Inc(
-		metrics.Label{Name: "a_label", Value: "a_value"},
-		metrics.Label{Name: "z_label", Value: "z_value"},
-		metrics.Label{Name: "m_label", Value: "m_value"},
+		Label{Name: "a_label", Value: "a_value"},
+		Label{Name: "z_label", Value: "z_value"},
+		Label{Name: "m_label", Value: "m_value"},
 	)
 
 	gathered := metricstest.MustGatherMetrics(t)
 	// Labels are provided to the metric in the order they are defined, and gathered in alphabetical order.
 	gathered.AssertMetric("kgateway_test_label_order_total", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
+		Labels: []Label{
 			{Name: "a_label", Value: "a_value"},
 			{Name: "m_label", Value: "m_value"},
 			{Name: "z_label", Value: "z_value"},
@@ -370,22 +368,22 @@ func TestValidateLabelsOrder(t *testing.T) {
 }
 
 func TestLabelsWithEmptyValues(t *testing.T) {
-	opts := metrics.CounterOpts{
+	opts := CounterOpts{
 		Name: "test_empty_labels_total",
 		Help: "A test counter for empty label testing",
 	}
 
-	counter := metrics.NewCounter(opts, []string{"label1", "label2", "label3"})
+	counter := NewCounter(opts, []string{"label1", "label2", "label3"})
 
 	counter.Inc(
-		metrics.Label{Name: "label1", Value: ""},
-		metrics.Label{Name: "label2", Value: "non_empty"},
-		metrics.Label{Name: "label3", Value: ""},
+		Label{Name: "label1", Value: ""},
+		Label{Name: "label2", Value: "non_empty"},
+		Label{Name: "label3", Value: ""},
 	)
 
 	gathered := metricstest.MustGatherMetrics(t)
 	gathered.AssertMetric("kgateway_test_empty_labels_total", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
+		Labels: []Label{
 			{Name: "label1", Value: ""},
 			{Name: "label2", Value: "non_empty"},
 			{Name: "label3", Value: ""},
@@ -396,11 +394,11 @@ func TestLabelsWithEmptyValues(t *testing.T) {
 
 func TestActiveMetrics(t *testing.T) {
 	// Ensure metrics are active by default.
-	assert.True(t, metrics.Active())
+	assert.True(t, Active())
 
-	metrics.SetActive(false)
-	assert.False(t, metrics.Active())
+	SetActive(false)
+	assert.False(t, Active())
 
-	metrics.SetActive(true)
-	assert.True(t, metrics.Active())
+	SetActive(true)
+	assert.True(t, Active())
 }

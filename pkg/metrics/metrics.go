@@ -2,6 +2,8 @@
 package metrics
 
 import (
+	"reflect"
+	"sync"
 	"sync/atomic"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -12,6 +14,12 @@ import (
 const (
 	// DefaultNamespace is the default namespace used for all metrics.
 	DefaultNamespace = "kgateway"
+)
+
+var (
+	// registry is the global metrics registry.
+	registry     = metrics.Registry
+	registryLock = sync.RWMutex{}
 )
 
 // Label defines a name-value pair for labeling metrics.
@@ -47,7 +55,10 @@ func NewCounter(opts CounterOpts, labels []string) Counter {
 		labels: labels,
 	}
 
-	if err := metrics.Registry.Register(c.m); err != nil {
+	registryLock.RLock()
+	defer registryLock.RUnlock()
+
+	if err := registry.Register(c.m); err != nil {
 		panic("failed to register counter metric " + opts.Name + ": " + err.Error())
 	}
 
@@ -118,7 +129,10 @@ func NewHistogram(opts HistogramOpts, labels []string) Histogram {
 		labels: labels,
 	}
 
-	if err := metrics.Registry.Register(h.m); err != nil {
+	registryLock.RLock()
+	defer registryLock.RUnlock()
+
+	if err := registry.Register(h.m); err != nil {
 		panic("failed to register histogram metric " + opts.Name + ": " + err.Error())
 	}
 
@@ -186,7 +200,10 @@ func NewGauge(opts GaugeOpts, labels []string) Gauge {
 		labels: labels,
 	}
 
-	if err := metrics.Registry.Register(g.m); err != nil {
+	registryLock.RLock()
+	defer registryLock.RUnlock()
+
+	if err := registry.Register(g.m); err != nil {
 		panic("failed to register gauge metric " + opts.Name + ": " + err.Error())
 	}
 
@@ -268,6 +285,40 @@ func SetActive(active bool) {
 // Active checks if metrics are globally active.
 func Active() bool {
 	return atomic.LoadUint32(&disabled) == 0
+}
+
+// Registry returns the global metrics registry.
+func Registry() metrics.RegistererGatherer {
+	registryLock.RLock()
+	defer registryLock.RUnlock()
+
+	return registry
+}
+
+// SetRegistry sets the global metrics registry.
+func SetRegistry(r metrics.RegistererGatherer) {
+	registryLock.Lock()
+	defer registryLock.Unlock()
+
+	if isNil(r) {
+		registry = metrics.Registry
+	} else {
+		registry = r
+	}
+}
+
+// isNil checks if the provided interface contains nil or a nil value.
+func isNil(arg any) bool {
+	if v := reflect.ValueOf(arg); !v.IsValid() || ((v.Kind() == reflect.Ptr ||
+		v.Kind() == reflect.Interface ||
+		v.Kind() == reflect.Slice ||
+		v.Kind() == reflect.Map ||
+		v.Kind() == reflect.Chan ||
+		v.Kind() == reflect.Func) && v.IsNil()) {
+		return true
+	}
+
+	return false
 }
 
 // RegisterEvents registers KRT events for a collection if metrics are active.

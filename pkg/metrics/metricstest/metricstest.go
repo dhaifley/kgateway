@@ -10,7 +10,6 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	crmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
@@ -103,7 +102,7 @@ func MustGatherPrometheusMetrics(t require.TestingT) GatheredMetrics {
 		metrics: make(map[string][]*dto.Metric),
 		t:       t,
 	}
-	metricFamilies, err := crmetrics.Registry.Gather()
+	metricFamilies, err := metrics.Registry().Gather()
 	require.NoError(t, err)
 
 	for _, mf := range metricFamilies {
@@ -247,12 +246,12 @@ func (g *prometheusGatheredMetrics) mustGetMetricValue(metric *dto.Metric) float
 
 // GatherAndLint gathers metrics and runs a linter on them.
 func GatherAndLint(metricNames ...string) ([]promlint.Problem, error) {
-	return testutil.GatherAndLint(crmetrics.Registry, metricNames...)
+	return testutil.GatherAndLint(metrics.Registry(), metricNames...)
 }
 
 // GatherAndCompare gathers metrics and runs a linter on them.
 func GatherAndCompare(expected io.Reader, metricNames ...string) error {
-	return testutil.GatherAndCompare(crmetrics.Registry, expected, metricNames...)
+	return testutil.GatherAndCompare(metrics.Registry(), expected, metricNames...)
 }
 
 // CollectAndCompare collects metrics from a collector and compares them against expected values.
