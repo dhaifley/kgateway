@@ -173,8 +173,16 @@ func setupGateway(ctx context.Context) {
 	err := k8sClient.Create(ctx, gw)
 	Expect(err).NotTo(HaveOccurred())
 
-	// Wait for service to be created
+	waitForGatewayService(ctx, gw)
+
+	if probs, err := metricstest.GatherAndLint(); err != nil || len(probs) > 0 {
+		Fail("metrics linter error: " + err.Error())
+	}
+}
+
+func waitForGatewayService(ctx context.Context, gw *api.Gateway) corev1.Service {
 	var svc corev1.Service
+
 	Eventually(func() bool {
 		var createdServices corev1.ServiceList
 		err := k8sClient.List(ctx, &createdServices)
@@ -190,7 +198,5 @@ func setupGateway(ctx context.Context) {
 	}, timeout, interval).Should(BeTrue(), "service not created")
 	Expect(svc.Spec.ClusterIP).NotTo(BeEmpty())
 
-	if probs, err := metricstest.GatherAndLint(); err != nil || len(probs) > 0 {
-		Fail("metrics linter error: " + err.Error())
-	}
+	return svc
 }

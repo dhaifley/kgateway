@@ -36,7 +36,7 @@ jobs:
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^Backends$$|^TestKgateway$$/^Transforms$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgatewayWaypoint$$'
           localstack: 'false'
-        # May 19, 2025: ~20 minutes
+        # June 23, 2025: ~20 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^Metrics$$'
