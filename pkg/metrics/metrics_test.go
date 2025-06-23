@@ -3,11 +3,12 @@ package metrics_test
 import (
 	"testing"
 
-	. "github.com/kgateway-dev/kgateway/v2/pkg/metrics"
-	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	. "github.com/kgateway-dev/kgateway/v2/pkg/metrics"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )
 
 func TestCounterInterface(t *testing.T) {
