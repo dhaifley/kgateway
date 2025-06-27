@@ -28,6 +28,7 @@ var (
 			Subsystem:                       statusSubsystem,
 			Name:                            "status_sync_duration_seconds",
 			Help:                            "Status sync duration",
+			Buckets:                         metrics.DefBuckets,
 			NativeHistogramBucketFactor:     1.1,
 			NativeHistogramMaxBucketNumber:  100,
 			NativeHistogramMinResetDuration: time.Hour,

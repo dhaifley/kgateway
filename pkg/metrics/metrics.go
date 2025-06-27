@@ -17,9 +17,14 @@ const (
 )
 
 var (
+	// DefBuckets defines the default buckets used for histograms.
+	DefBuckets = prometheus.DefBuckets
+)
+
+var (
 	// registry is the global metrics registry.
-	registry     = metrics.Registry
-	registryLock = sync.RWMutex{}
+	registry     RegistererGatherer = prometheus.NewRegistry()
+	registryLock                    = sync.RWMutex{}
 )
 
 // Metric defines a base interface for metrics.
@@ -297,9 +302,13 @@ func Registry() RegistererGatherer {
 }
 
 // SetRegistry sets the global metrics registry.
-func SetRegistry(r RegistererGatherer) {
+func SetRegistry(useBuiltinRegistry bool, r RegistererGatherer) {
 	registryLock.Lock()
 	defer registryLock.Unlock()
+
+	if !useBuiltinRegistry {
+		metrics.Registry = registry
+	}
 
 	if isNil(r) {
 		registry = metrics.Registry

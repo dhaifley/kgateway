@@ -12,7 +12,7 @@ import (
 )
 
 func TestCounterInterface(t *testing.T) {
-	SetRegistry(prometheus.NewRegistry())
+	SetRegistry(false, nil)
 
 	opts := CounterOpts{
 		Name: "test_total",
@@ -48,7 +48,7 @@ func TestCounterInterface(t *testing.T) {
 }
 
 func TestCounterPartialLabels(t *testing.T) {
-	SetRegistry(prometheus.NewRegistry())
+	SetRegistry(false, nil)
 
 	opts := CounterOpts{
 		Name: "test_total",
@@ -72,7 +72,7 @@ func TestCounterPartialLabels(t *testing.T) {
 }
 
 func TestCounterNoLabels(t *testing.T) {
-	SetRegistry(prometheus.NewRegistry())
+	SetRegistry(false, nil)
 
 	opts := CounterOpts{
 		Name: "test_total",
@@ -92,7 +92,7 @@ func TestCounterNoLabels(t *testing.T) {
 }
 
 func TestCounterRegistrationPanic(t *testing.T) {
-	SetRegistry(prometheus.NewRegistry())
+	SetRegistry(false, nil)
 
 	opts := CounterOpts{
 		Name: "test_total",
@@ -108,12 +108,12 @@ func TestCounterRegistrationPanic(t *testing.T) {
 }
 
 func TestHistogramInterface(t *testing.T) {
-	SetRegistry(prometheus.NewRegistry())
+	SetRegistry(false, nil)
 
 	opts := HistogramOpts{
 		Name:    "test_duration_seconds",
 		Help:    "A test histogram metric",
-		Buckets: prometheus.DefBuckets,
+		Buckets: DefBuckets,
 	}
 
 	histogram := NewHistogram(opts, []string{"label1", "label2"})
@@ -137,12 +137,12 @@ func TestHistogramInterface(t *testing.T) {
 }
 
 func TestHistogramPartialLabels(t *testing.T) {
-	SetRegistry(prometheus.NewRegistry())
+	SetRegistry(false, nil)
 
 	opts := HistogramOpts{
 		Name:    "test_duration_seconds_partial",
 		Help:    "A test histogram metric with partial labels",
-		Buckets: prometheus.DefBuckets,
+		Buckets: DefBuckets,
 	}
 
 	histogram := NewHistogram(opts, []string{"label1", "label2", "label3"})
@@ -163,7 +163,7 @@ func TestHistogramPartialLabels(t *testing.T) {
 }
 
 func TestHistogramNoLabels(t *testing.T) {
-	SetRegistry(prometheus.NewRegistry())
+	SetRegistry(false, nil)
 
 	opts := HistogramOpts{
 		Name:    "test_duration_seconds_no_labels",
@@ -185,12 +185,12 @@ func TestHistogramNoLabels(t *testing.T) {
 }
 
 func TestHistogramRegistrationPanic(t *testing.T) {
-	SetRegistry(prometheus.NewRegistry())
+	SetRegistry(false, nil)
 
 	opts := HistogramOpts{
 		Name:    "test_duration_seconds_duplicate",
 		Help:    "A test histogram metric",
-		Buckets: prometheus.DefBuckets,
+		Buckets: DefBuckets,
 	}
 
 	NewHistogram(opts, []string{})
@@ -202,7 +202,7 @@ func TestHistogramRegistrationPanic(t *testing.T) {
 }
 
 func TestGaugeInterface(t *testing.T) {
-	SetRegistry(prometheus.NewRegistry())
+	SetRegistry(false, nil)
 
 	opts := GaugeOpts{
 		Name: "tests",
@@ -244,7 +244,7 @@ func TestGaugeInterface(t *testing.T) {
 }
 
 func TestGaugePartialLabels(t *testing.T) {
-	SetRegistry(prometheus.NewRegistry())
+	SetRegistry(false, nil)
 
 	opts := GaugeOpts{
 		Name: "tests_partial",
@@ -268,7 +268,7 @@ func TestGaugePartialLabels(t *testing.T) {
 }
 
 func TestGaugeNoLabels(t *testing.T) {
-	SetRegistry(prometheus.NewRegistry())
+	SetRegistry(false, nil)
 
 	opts := GaugeOpts{
 		Name: "tests_no_labels",
@@ -289,7 +289,7 @@ func TestGaugeNoLabels(t *testing.T) {
 }
 
 func TestGaugeRegistrationPanic(t *testing.T) {
-	SetRegistry(prometheus.NewRegistry())
+	SetRegistry(false, nil)
 
 	opts := GaugeOpts{
 		Name: "tests_duplicate",
@@ -305,7 +305,7 @@ func TestGaugeRegistrationPanic(t *testing.T) {
 }
 
 func TestGetPromCollector(t *testing.T) {
-	SetRegistry(prometheus.NewRegistry())
+	SetRegistry(false, nil)
 
 	counterOpts := CounterOpts{
 		Name: "test_collector_total",
@@ -319,7 +319,7 @@ func TestGetPromCollector(t *testing.T) {
 	histogramOpts := HistogramOpts{
 		Name:    "test_collector_duration_seconds",
 		Help:    "A test histogram for collector testing",
-		Buckets: prometheus.DefBuckets,
+		Buckets: DefBuckets,
 	}
 	histogram := NewHistogram(histogramOpts, []string{})
 	histogramCollector := GetPromCollector(histogram)
@@ -340,7 +340,7 @@ func TestGetPromCollector(t *testing.T) {
 }
 
 func TestValidateLabelsOrder(t *testing.T) {
-	SetRegistry(prometheus.NewRegistry())
+	SetRegistry(false, nil)
 
 	opts := CounterOpts{
 		Name: "test_label_order_total",

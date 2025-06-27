@@ -26,6 +26,7 @@ var (
 			Subsystem:                       translatorSubsystem,
 			Name:                            "translation_duration_seconds",
 			Help:                            "Translation duration",
+			Buckets:                         metrics.DefBuckets,
 			NativeHistogramBucketFactor:     1.1,
 			NativeHistogramMaxBucketNumber:  100,
 			NativeHistogramMinResetDuration: time.Hour,

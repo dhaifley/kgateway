@@ -25,6 +25,7 @@ var (
 			Subsystem:                       controllerSubsystem,
 			Name:                            "reconcile_duration_seconds",
 			Help:                            "Reconcile duration for controller",
+			Buckets:                         metrics.DefBuckets,
 			NativeHistogramBucketFactor:     1.1,
 			NativeHistogramMaxBucketNumber:  100,
 			NativeHistogramMinResetDuration: time.Hour,

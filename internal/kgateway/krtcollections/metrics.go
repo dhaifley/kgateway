@@ -30,6 +30,7 @@ var (
 			Subsystem:                       collectionSubsystem,
 			Name:                            "transform_duration_seconds",
 			Help:                            "Transform duration",
+			Buckets:                         metrics.DefBuckets,
 			NativeHistogramBucketFactor:     1.1,
 			NativeHistogramMaxBucketNumber:  100,
 			NativeHistogramMinResetDuration: time.Hour,

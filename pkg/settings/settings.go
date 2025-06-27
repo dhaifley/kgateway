@@ -116,6 +116,10 @@ type Settings struct {
 	// If two routes have the same weight, Gateway API route precedence rules apply.
 	// When enabled, the default weight for a route is 0.
 	WeightedRoutePrecedence bool `split_words:"true" default:"false"`
+
+	// EnableBuiltinDefaultMetrics enables the default bultin controller-runtime metrics and go runtime metrics.
+	// Since these metrics can be numerous, it is disabled by default.
+	EnableBuiltinDefaultMetrics bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env
