@@ -1,6 +1,7 @@
 package proxy_syncer
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -30,11 +31,11 @@ func TestNewStatusSyncRecorder(t *testing.T) {
 	setupTest()
 
 	syncerName := "test-syncer"
-	m := NewStatusSyncMetricsRecorder(syncerName)
+	m := newStatusSyncMetricsRecorder(syncerName)
 
 	finishFunc := m.StatusSyncStart()
 	finishFunc(nil)
-	m.SetResources(StatusSyncResourcesMetricLabels{Namespace: "default", Name: "test", Resource: "route"}, 5)
+	m.SetResources(statusSyncResourcesMetricLabels{Namespace: "default", Name: "test", Resource: "route"}, 5)
 
 	expectedMetrics := []string{
 		"kgateway_status_syncer_status_syncs_total",
@@ -52,7 +53,7 @@ func TestNewStatusSyncRecorder(t *testing.T) {
 func TestStatusSyncStart_Success(t *testing.T) {
 	setupTest()
 
-	m := NewStatusSyncMetricsRecorder("test-syncer")
+	m := newStatusSyncMetricsRecorder("test-syncer")
 
 	finishFunc := m.StatusSyncStart()
 	time.Sleep(10 * time.Millisecond)
@@ -77,7 +78,7 @@ func TestStatusSyncStart_Success(t *testing.T) {
 func TesStatusSyncStart_Error(t *testing.T) {
 	setupTest()
 
-	m := NewStatusSyncMetricsRecorder("test-syncer")
+	m := newStatusSyncMetricsRecorder("test-syncer")
 
 	finishFunc := m.StatusSyncStart()
 	finishFunc(assert.AnError)
@@ -97,11 +98,11 @@ func TesStatusSyncStart_Error(t *testing.T) {
 func TestStatusSyncResources(t *testing.T) {
 	setupTest()
 
-	m := NewStatusSyncMetricsRecorder("test-statusSync")
+	m := newStatusSyncMetricsRecorder("test-statusSync")
 
 	// Test SetResources.
-	m.SetResources(StatusSyncResourcesMetricLabels{Namespace: "default", Name: "test", Resource: "route"}, 5)
-	m.SetResources(StatusSyncResourcesMetricLabels{Namespace: "kube-system", Name: "test", Resource: "gateway"}, 3)
+	m.SetResources(statusSyncResourcesMetricLabels{Namespace: "default", Name: "test", Resource: "route"}, 5)
+	m.SetResources(statusSyncResourcesMetricLabels{Namespace: "kube-system", Name: "test", Resource: "gateway"}, 3)
 
 	expectedRouteLabels := []metrics.Label{
 		{Name: "name", Value: "test"},
@@ -129,7 +130,7 @@ func TestStatusSyncResources(t *testing.T) {
 		},
 	})
 	// Test IncResources.
-	m.IncResources(StatusSyncResourcesMetricLabels{Namespace: "default", Name: "test", Resource: "route"})
+	m.IncResources(statusSyncResourcesMetricLabels{Namespace: "default", Name: "test", Resource: "route"})
 
 	currentMetrics = metricstest.MustGatherMetrics(t)
 	currentMetrics.AssertMetrics("kgateway_status_syncer_resources", []metricstest.ExpectMetric{
@@ -144,7 +145,7 @@ func TestStatusSyncResources(t *testing.T) {
 	})
 
 	// Test DecResources.
-	m.DecResources(StatusSyncResourcesMetricLabels{Namespace: "default", Name: "test", Resource: "route"})
+	m.DecResources(statusSyncResourcesMetricLabels{Namespace: "default", Name: "test", Resource: "route"})
 
 	currentMetrics = metricstest.MustGatherMetrics(t)
 	currentMetrics.AssertMetrics("kgateway_status_syncer_resources", []metricstest.ExpectMetric{
@@ -178,7 +179,7 @@ func TestStatusSyncMetricsNotActive(t *testing.T) {
 	metrics.SetActive(false)
 	defer metrics.SetActive(true)
 
-	m := NewStatusSyncMetricsRecorder("test-syncer")
+	m := newStatusSyncMetricsRecorder("test-syncer")
 
 	finishFunc := m.StatusSyncStart()
 	time.Sleep(10 * time.Millisecond)
@@ -298,6 +299,19 @@ func TestXDSSnapshotsCollectionMetrics(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ResetMetrics()
+			krtcollections.ResetMetrics()
+
+			for i := range 100 {
+				tc.inputs = append(tc.inputs, ir.NewUniqlyConnectedClient(
+					fmt.Sprintf("kgateway-kube-gateway-api~ns~test%d", i),
+					"ns",
+					map[string]string{"a": "b"},
+					ir.PodLocality{
+						Zone:    fmt.Sprintf("zone%d", i),
+						Region:  fmt.Sprintf("region%d", i),
+						Subzone: fmt.Sprintf("subzone%d", i),
+					}))
+			}
 
 			mock := krttest.NewMock(t, tc.inputs)
 			mockUcc := krttest.GetMockCollection[ir.UniqlyConnectedClient](mock)
@@ -317,11 +331,21 @@ func TestXDSSnapshotsCollectionMetrics(t *testing.T) {
 					index: krt.NewIndex(mockUccWithCluster, func(ucc uccWithCluster) []string {
 						return []string{ucc.Client.ResourceName()}
 					}),
+				})
+
+			time.Sleep(300 * time.Microsecond) // Allow some time for some events to process.
+
+			gatheredDuringSync := metricstest.MustGatherMetrics(t)
+
+			gatheredDuringSync.AssertMetric("kgateway_collection_transforms_running", &metricstest.ExpectedMetricValueTest{
+				Labels: []metrics.Label{
+					{Name: "collection", Value: "ClientXDSSnapshots"},
 				},
-				krtcollections.NewCollectionMetricsRecorder("ClientXDSSnapshots"))
+				Test: metricstest.Between(1, 101),
+			})
 
 			c.WaitUntilSynced(nil)
-			time.Sleep(5 * time.Millisecond) // Allow some time for events to process.
+			time.Sleep(5 * time.Millisecond) // Allow some time all for events to process.
 
 			gathered := metricstest.MustGatherMetrics(t)
 
@@ -330,7 +354,7 @@ func TestXDSSnapshotsCollectionMetrics(t *testing.T) {
 					{Name: "collection", Value: "ClientXDSSnapshots"},
 					{Name: "result", Value: "success"},
 				},
-				Value: 1,
+				Value: 101,
 			})
 
 			gathered.AssertMetricsLabels("kgateway_collection_transform_duration_seconds", [][]metrics.Label{{

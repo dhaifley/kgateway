@@ -33,10 +33,10 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
+	tmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -75,7 +75,6 @@ type ProxySyncer struct {
 	gatewayStatusMetrics  statusSyncMetricsRecorder
 	listenerStatusMetrics statusSyncMetricsRecorder
 	policyStatusMetrics   statusSyncMetricsRecorder
-	xdsSnapshotsMetrics   krtcollections.CollectionMetricsRecorder
 }
 
 type GatewayXdsResources struct {
@@ -158,11 +157,10 @@ func NewProxySyncer(
 		uniqueClients:         uniqueClients,
 		translator:            translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols),
 		plugins:               mergedPlugins,
-		routeStatusMetrics:    NewStatusSyncMetricsRecorder("RouteStatusSyncer"),
-		gatewayStatusMetrics:  NewStatusSyncMetricsRecorder("GatewayStatusSyncer"),
-		listenerStatusMetrics: NewStatusSyncMetricsRecorder("ListenerSetStatusSyncer"),
-		policyStatusMetrics:   NewStatusSyncMetricsRecorder("PolicyStatusSyncer"),
-		xdsSnapshotsMetrics:   krtcollections.NewCollectionMetricsRecorder("ClientXDSSnapshots"),
+		routeStatusMetrics:    newStatusSyncMetricsRecorder("RouteStatusSyncer"),
+		gatewayStatusMetrics:  newStatusSyncMetricsRecorder("GatewayStatusSyncer"),
+		listenerStatusMetrics: newStatusSyncMetricsRecorder("ListenerSetStatusSyncer"),
+		policyStatusMetrics:   newStatusSyncMetricsRecorder("PolicyStatusSyncer"),
 	}
 }
 
@@ -253,7 +251,6 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		s.mostXdsSnapshots,
 		epPerClient,
 		clustersPerClient,
-		s.xdsSnapshotsMetrics,
 	)
 
 	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
@@ -459,7 +456,10 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	defer s.routeStatusMetrics.StatusSyncStart()(nil)
+	var rErr error
+
+	finishMetrics := s.routeStatusMetrics.StatusSyncStart()
+	defer func() { finishMetrics(rErr) }()
 
 	// Helper function to sync route status with retry
 	syncStatusWithRetry := func(
@@ -471,6 +471,24 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 		return retry.Do(
 			func() error {
 				route := getRouteFunc()
+				gatewayName := "unknown"
+
+				defer func() {
+					resourcesSyncsCompletedTotal.Inc(resourcesMetricLabels{
+						Name:      gatewayName,
+						Namespace: routeKey.Namespace,
+						Resource:  routeType,
+					}.toMetricsLabels()...)
+
+					resourcesSyncDuration.Observe(time.Since(tmetrics.GetResourceSyncStartTime(
+						tmetrics.GetResourceKey(routeKey.Namespace, gatewayName, routeType, routeKey.Name))).Seconds(),
+						resourcesMetricLabels{
+							Name:      gatewayName,
+							Namespace: routeKey.Namespace,
+							Resource:  routeType,
+						}.toMetricsLabels()...)
+				}()
+
 				err := s.mgr.GetClient().Get(ctx, routeKey, route)
 				if err != nil {
 					if apierrors.IsNotFound(err) {
@@ -481,6 +499,11 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 					logger.Error("error getting route", "error", err, "resource_ref", routeKey, "route_type", routeType)
 					return err
 				}
+
+				if p, ok := route.(*gwv1.HTTPRoute); ok && len(p.Spec.ParentRefs) > 0 {
+					gatewayName = string(p.Spec.ParentRefs[0].Name)
+				}
+
 				if err := statusUpdater(route); err != nil {
 					logger.Debug("error updating status for route", "error", err, "resource_ref", routeKey, "route_type", routeType)
 					return err
@@ -534,7 +557,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 	s.routeStatusMetrics.ResetResources("HTTPRoute")
 
 	for rnn := range rm.HTTPRoutes {
-		s.routeStatusMetrics.IncResources(StatusSyncResourcesMetricLabels{
+		s.routeStatusMetrics.IncResources(statusSyncResourcesMetricLabels{
 			Namespace: rnn.Namespace,
 			Name:      rnn.Name,
 			Resource:  "HTTPRoute",
@@ -551,6 +574,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 			},
 		)
 		if err != nil {
+			rErr = err
 			logger.Error("all attempts failed at updating HTTPRoute status", "error", err, "route", rnn)
 		}
 	}
@@ -559,7 +583,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 	s.routeStatusMetrics.ResetResources("TCPRoute")
 
 	for rnn := range rm.TCPRoutes {
-		s.routeStatusMetrics.IncResources(StatusSyncResourcesMetricLabels{
+		s.routeStatusMetrics.IncResources(statusSyncResourcesMetricLabels{
 			Namespace: rnn.Namespace,
 			Name:      rnn.Name,
 			Resource:  "TCPRoute",
@@ -569,6 +593,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 			return buildAndUpdateStatus(route, wellknown.TCPRouteKind)
 		})
 		if err != nil {
+			rErr = err
 			logger.Error("all attempts failed at updating TCPRoute status", "error", err, "route", rnn)
 		}
 	}
@@ -577,7 +602,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 	s.routeStatusMetrics.ResetResources("TLSRoute")
 
 	for rnn := range rm.TLSRoutes {
-		s.routeStatusMetrics.IncResources(StatusSyncResourcesMetricLabels{
+		s.routeStatusMetrics.IncResources(statusSyncResourcesMetricLabels{
 			Namespace: rnn.Namespace,
 			Name:      rnn.Name,
 			Resource:  "TLSRoute",
@@ -587,6 +612,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 			return buildAndUpdateStatus(route, wellknown.TLSRouteKind)
 		})
 		if err != nil {
+			rErr = err
 			logger.Error("all attempts failed at updating TLSRoute status", "error", err, "route", rnn)
 		}
 	}
@@ -595,7 +621,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 	s.routeStatusMetrics.ResetResources("GRPCRoute")
 
 	for rnn := range rm.GRPCRoutes {
-		s.routeStatusMetrics.IncResources(StatusSyncResourcesMetricLabels{
+		s.routeStatusMetrics.IncResources(statusSyncResourcesMetricLabels{
 			Namespace: rnn.Namespace,
 			Name:      rnn.Name,
 			Resource:  "GRPCRoute",
@@ -605,6 +631,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 			return buildAndUpdateStatus(route, wellknown.GRPCRouteKind)
 		})
 		if err != nil {
+			rErr = err
 			logger.Error("all attempts failed at updating GRPCRoute status", "error", err, "route", rnn)
 		}
 	}
@@ -629,7 +656,7 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 				return err
 			}
 
-			s.gatewayStatusMetrics.IncResources(StatusSyncResourcesMetricLabels{
+			s.gatewayStatusMetrics.IncResources(statusSyncResourcesMetricLabels{
 				Namespace: gwnn.Namespace,
 				Name:      gwnn.Name,
 				Resource:  "Gateway",
@@ -649,6 +676,20 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 					logger.Info("skipping k8s gateway status update, status equal", "gateway", gwnn.String())
 				}
 			}
+
+			resourcesSyncsCompletedTotal.Inc(resourcesMetricLabels{
+				Name:      gwnn.Name,
+				Namespace: gwnn.Namespace,
+				Resource:  "Gateway",
+			}.toMetricsLabels()...)
+
+			resourcesSyncDuration.Observe(time.Since(tmetrics.GetResourceSyncStartTime(
+				tmetrics.GetResourceKey(gwnn.Namespace, gwnn.Name, "Gateway", gwnn.Name))).Seconds(),
+				resourcesMetricLabels{
+					Name:      gwnn.Name,
+					Namespace: gwnn.Namespace,
+					Resource:  "Gateway",
+				}.toMetricsLabels()...)
 		}
 		return nil
 	},
@@ -720,7 +761,7 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 		gk := schema.GroupKind{Group: key.Group, Kind: key.Kind}
 		nsName := types.NamespacedName{Namespace: key.Namespace, Name: key.Name}
 
-		s.gatewayStatusMetrics.IncResources(StatusSyncResourcesMetricLabels{
+		s.gatewayStatusMetrics.IncResources(statusSyncResourcesMetricLabels{
 			Namespace: nsName.Namespace,
 			Name:      nsName.Name,
 			Resource:  "Policy",
@@ -759,6 +800,20 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 		if err != nil {
 			logger.Error("error updating policy status", "error", err, "group_kind", gk, "resource_ref", nsName)
 		}
+
+		resourcesSyncsCompletedTotal.Inc(resourcesMetricLabels{
+			Name:      nsName.Name,
+			Namespace: nsName.Namespace,
+			Resource:  "Policy",
+		}.toMetricsLabels()...)
+
+		resourcesSyncDuration.Observe(time.Since(tmetrics.GetResourceSyncStartTime(
+			tmetrics.GetResourceKey(nsName.Namespace, nsName.Name, "Policy", plugin.Name))).Seconds(),
+			resourcesMetricLabels{
+				Name:      nsName.Name,
+				Namespace: nsName.Namespace,
+				Resource:  "Policy",
+			}.toMetricsLabels()...)
 	}
 }
 

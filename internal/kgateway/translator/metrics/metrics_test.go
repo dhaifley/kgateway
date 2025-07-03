@@ -107,6 +107,36 @@ func TestTranslationStart_Error(t *testing.T) {
 	currentMetrics.AssertHistogramPopulated("kgateway_translator_translation_duration_seconds")
 }
 
+func TestIncResourcesSyncsStartedTotal(t *testing.T) {
+	setupTest()
+
+	IncResourcesSyncsStartedTotal("test", ResourceMetricLabels{
+		Name:      "test-name",
+		Namespace: "test-namespace",
+		Resource:  "test-resource",
+	})
+
+	currentMetrics := metricstest.MustGatherMetrics(t)
+	currentMetrics.AssertMetric("kgateway_resources_syncs_started_total", &metricstest.ExpectedMetric{
+		Labels: []metrics.Label{
+			{Name: "name", Value: "test-name"},
+			{Name: "namespace", Value: "test-namespace"},
+			{Name: "resource", Value: "test-resource"},
+		},
+		Value: 1,
+	})
+}
+
+func TestGetResourceSyncStartTime(t *testing.T) {
+	rKey := GetResourceKey("test", "test", "test", "test")
+
+	StartResourceSync(rKey)
+
+	syncTime := GetResourceSyncStartTime(rKey)
+
+	assert.NotZero(t, syncTime, "Expected sync start time to be set")
+}
+
 func TestTranslationMetricsNotActive(t *testing.T) {
 	metrics.SetActive(false)
 	defer metrics.SetActive(true)

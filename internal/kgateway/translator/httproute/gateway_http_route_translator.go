@@ -9,6 +9,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -57,6 +58,15 @@ func translateGatewayHTTPRouteRulesUtil(
 	if !ok {
 		return
 	}
+
+	metricsRecorder := metrics.NewTranslatorMetricsRecorder("TranslateHTTPRoute")
+	defer metricsRecorder.TranslationStart()(nil)
+
+	metrics.IncResourcesSyncsStartedTotal(routeInfo.GetName(), metrics.ResourceMetricLabels{
+		Name:      string(routeInfo.ParentRef.Name),
+		Namespace: routeInfo.GetNamespace(),
+		Resource:  routeInfo.GetKind(),
+	})
 
 	for ruleIdx, rule := range route.Rules {
 		if len(rule.Matches) == 0 {

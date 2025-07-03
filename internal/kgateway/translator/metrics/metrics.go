@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"sync"
 	"time"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
@@ -9,7 +10,7 @@ import (
 const (
 	translatorSubsystem = "translator"
 	translatorNameLabel = "translator"
-	routingSubsystem    = "routing"
+	resourcesSubsystem  = "resources"
 )
 
 var (
@@ -40,7 +41,28 @@ var (
 		},
 		[]string{translatorNameLabel},
 	)
+
+	resourcesSyncsStartedTotal = metrics.NewCounter(metrics.CounterOpts{
+		Subsystem: resourcesSubsystem,
+		Name:      "syncs_started_total",
+		Help:      "The total number of syncs started for the specified gateway resource",
+	},
+		[]string{"name", "namespace", "resource"})
 )
+
+type ResourceMetricLabels struct {
+	Name      string
+	Namespace string
+	Resource  string
+}
+
+func (r ResourceMetricLabels) toMetricsLabels() []metrics.Label {
+	return []metrics.Label{
+		{Name: "name", Value: r.Name},
+		{Name: "namespace", Value: r.Namespace},
+		{Name: "resource", Value: r.Resource},
+	}
+}
 
 // TranslatorMetricsRecorder defines the interface for recording translator metrics.
 type TranslatorMetricsRecorder interface {
@@ -108,10 +130,61 @@ func (m *nullTranslatorMetricsRecorder) TranslationStart() func(error) {
 	return func(err error) {}
 }
 
+// IncTranslationsTotal increments the total translations counter.
+func IncResourcesSyncsStartedTotal(resourceName string, labels ResourceMetricLabels) {
+	resourceKey := GetResourceKey(labels.Namespace, labels.Name, labels.Resource, resourceName)
+
+	StartResourceSync(resourceKey)
+
+	resourcesSyncsStartedTotal.Inc(labels.toMetricsLabels()...)
+}
+
+// resourceSyncStartTimes tracks the start times of resource syncs.
+type resourceSyncStartTimes struct {
+	sync.RWMutex
+	times map[string]time.Time
+}
+
+var startTimes = &resourceSyncStartTimes{}
+
+// StartResourceSync records the start time of a sync for a given resource key.
+func StartResourceSync(resourceKey string) {
+	startTimes.Lock()
+	defer startTimes.Unlock()
+
+	if startTimes.times == nil {
+		startTimes.times = make(map[string]time.Time)
+	}
+
+	startTimes.times[resourceKey] = time.Now()
+}
+
+// GetResourceSyncStartTime retrieves the start time of a sync for a given resource key.
+func GetResourceSyncStartTime(resourceKey string) time.Time {
+	startTimes.RLock()
+	defer startTimes.RUnlock()
+
+	if st, exists := startTimes.times[resourceKey]; exists {
+		return st
+	}
+
+	return time.Now() // Return current time if not found.
+}
+
+// GetResourceKey constructs a resource key from the provided parameters.
+func GetResourceKey(namespace, gatewayName, resourceType, resourceName string) string {
+	return namespace + "/" + gatewayName + "/" + resourceType + "/" + resourceName
+}
+
 // ResetMetrics resets the metrics from this package.
 // This is provided for testing purposes only.
 func ResetMetrics() {
 	translationsTotal.Reset()
 	translationDuration.Reset()
 	translationsRunning.Reset()
+	resourcesSyncsStartedTotal.Reset()
+
+	startTimes.Lock()
+	defer startTimes.Unlock()
+	startTimes.times = make(map[string]time.Time)
 }
