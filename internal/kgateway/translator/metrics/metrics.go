@@ -263,8 +263,11 @@ func startResourceSync(details ResourceSyncDetails) bool {
 		Gateway:      details.Gateway,
 	}
 
-	_, exists := startTimes.times[details.Gateway][details.ResourceType][details.Namespace][details.ResourceName]
-	startTimes.times[details.Gateway][details.ResourceType][details.Namespace][details.ResourceName] = st
+	curStartTime, exists := startTimes.times[details.Gateway][details.ResourceType][details.Namespace][details.ResourceName]
+	if !exists {
+		startTimes.times[details.Gateway][details.ResourceType][details.Namespace][details.ResourceName] = st
+		curStartTime = st
+	}
 
 	if startTimes.times[details.Gateway]["XDSSnapshot"] == nil {
 		startTimes.times[details.Gateway]["XDSSnapshot"] = make(map[string]map[string]ResourceSyncStartTime)
@@ -274,7 +277,7 @@ func startResourceSync(details ResourceSyncDetails) bool {
 		startTimes.times[details.Gateway]["XDSSnapshot"][details.Namespace] = make(map[string]ResourceSyncStartTime)
 	}
 
-	startTimes.times[details.Gateway]["XDSSnapshot"][details.Namespace][details.ResourceName] = st
+	startTimes.times[details.Gateway]["XDSSnapshot"][details.Namespace][details.ResourceName] = curStartTime
 
 	return !exists
 }
