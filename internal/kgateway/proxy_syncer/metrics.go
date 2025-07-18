@@ -211,7 +211,7 @@ func newSnapshotMetricsRecorder() snapshotMetricsRecorder {
 func (m *snapshotMetrics) transformStart(clientKey string) func(error) {
 	start := time.Now()
 
-	gateway, namespace := getGatewayFromXDSSnapshotResourceName(clientKey)
+	cd := getDetailsFromXDSClientResourceName(clientKey)
 	return func(err error) {
 		result := "success"
 		if err != nil {
@@ -219,16 +219,16 @@ func (m *snapshotMetrics) transformStart(clientKey string) func(error) {
 		}
 
 		m.transformsTotal.Inc([]metrics.Label{
-			{Name: "gateway", Value: gateway},
-			{Name: "namespace", Value: namespace},
+			{Name: "gateway", Value: cd.Gateway},
+			{Name: "namespace", Value: cd.Namespace},
 			{Name: "result", Value: result},
 		}...)
 
 		duration := time.Since(start)
 
 		m.transformDuration.Observe(duration.Seconds(), []metrics.Label{
-			{Name: "gateway", Value: gateway},
-			{Name: "namespace", Value: namespace},
+			{Name: "gateway", Value: cd.Gateway},
+			{Name: "namespace", Value: cd.Namespace},
 		}...)
 	}
 }
@@ -239,22 +239,35 @@ func (m *nullSnapshotMetricsRecorder) transformStart(string) func(error) {
 	return func(err error) {}
 }
 
-// getGatewayFromXDSSnapshotResourceName extracts the gateway and namespace from an
-// XDS snapshot resource name.
-func getGatewayFromXDSSnapshotResourceName(resourceName string) (string, string) {
-	gateway := resourceName
-	namespace := "unknown"
+type resourceNameDetails struct {
+	Role      string
+	Namespace string
+	Gateway   string
+}
 
-	pks := strings.SplitN(gateway, "~", 5)
+// getDetailsFromXDSClientResourceName extracts details from an XDS client resource name.
+func getDetailsFromXDSClientResourceName(resourceName string) resourceNameDetails {
+	res := resourceNameDetails{
+		Role:      "unknown",
+		Namespace: "unknown",
+		Gateway:   "unknown",
+	}
+
+	pks := strings.SplitN(resourceName, "~", 5)
+
+	if len(pks) > 0 {
+		res.Role = pks[0]
+	}
+
 	if len(pks) > 1 {
-		namespace = pks[1]
+		res.Namespace = pks[1]
 	}
 
 	if len(pks) > 2 {
-		gateway = pks[2]
+		res.Gateway = pks[2]
 	}
 
-	return gateway, namespace
+	return res
 }
 
 // ResetMetrics resets the metrics from this package.

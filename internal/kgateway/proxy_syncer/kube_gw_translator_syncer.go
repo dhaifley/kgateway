@@ -22,7 +22,7 @@ func (s *ProxyTranslator) syncXds(
 
 	logger.Log(ctx, logging.LevelTrace, "syncing xds snapshot", "proxy_key", proxyKey)
 
-	gateway, namespace := getGatewayFromXDSSnapshotResourceName(snapWrap.ResourceName())
+	cd := getDetailsFromXDSClientResourceName(snapWrap.ResourceName())
 
 	// if the snapshot is not consistent, make it so
 	// TODO: me may need to copy this to not change krt cache.
@@ -31,12 +31,12 @@ func (s *ProxyTranslator) syncXds(
 	// snap.MakeConsistent()
 	s.xdsCache.SetSnapshot(ctx, proxyKey, snap)
 
-	tmetrics.IncXDSSnapshotSync(gateway, namespace)
+	tmetrics.IncXDSSnapshotSync(cd.Gateway, cd.Namespace)
 
 	tmetrics.EndResourceSync(tmetrics.ResourceSyncDetails{
-		Namespace:    namespace,
-		Gateway:      gateway,
+		Namespace:    cd.Namespace,
+		Gateway:      cd.Gateway,
 		ResourceType: "XDSSnapshot",
-		ResourceName: gateway,
+		ResourceName: cd.Gateway,
 	}, true, resourcesXDSSyncsTotal, resourcesXDSyncDuration)
 }

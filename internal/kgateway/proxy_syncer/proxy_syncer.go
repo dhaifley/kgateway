@@ -506,6 +506,9 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 					for _, parentRef := range r.Spec.ParentRefs {
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
 					}
+				default:
+					logger.Warn("unknown route type during status sync", "route_type",
+						routeType, "resource_ref", client.ObjectKeyFromObject(route))
 				}
 
 				if err := statusUpdater(route); err != nil {

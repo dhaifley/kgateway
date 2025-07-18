@@ -175,59 +175,59 @@ func snapshotPerClient(
 	}, krtopts.ToOptions("PerClientXdsSnapshots")...)
 
 	metrics.RegisterEvents(xdsSnapshotsForUcc, func(o krt.Event[XdsSnapWrapper]) {
-		gateway, namespace := getGatewayFromXDSSnapshotResourceName(o.Latest().ResourceName())
+		cd := getDetailsFromXDSClientResourceName(o.Latest().ResourceName())
 
 		switch o.Event {
 		case controllers.EventDelete:
 			snapshotResources.Set(0, snapshotResourcesMetricLabels{
-				Gateway:   gateway,
-				Namespace: namespace,
+				Gateway:   cd.Gateway,
+				Namespace: cd.Namespace,
 				Resource:  "Cluster",
 			}.toMetricsLabels()...)
 
 			snapshotResources.Set(0, snapshotResourcesMetricLabels{
-				Gateway:   gateway,
-				Namespace: namespace,
+				Gateway:   cd.Gateway,
+				Namespace: cd.Namespace,
 				Resource:  "Endpoint",
 			}.toMetricsLabels()...)
 
 			snapshotResources.Set(0, snapshotResourcesMetricLabels{
-				Gateway:   gateway,
-				Namespace: namespace,
+				Gateway:   cd.Gateway,
+				Namespace: cd.Namespace,
 				Resource:  "Route",
 			}.toMetricsLabels()...)
 
 			snapshotResources.Set(0, snapshotResourcesMetricLabels{
-				Gateway:   gateway,
-				Namespace: namespace,
+				Gateway:   cd.Gateway,
+				Namespace: cd.Namespace,
 				Resource:  "Listener",
 			}.toMetricsLabels()...)
 		case controllers.EventAdd, controllers.EventUpdate:
 			snapshotResources.Set(float64(len(o.Latest().snap.Resources[envoycachetypes.Cluster].Items)),
 				snapshotResourcesMetricLabels{
-					Gateway:   gateway,
-					Namespace: namespace,
+					Gateway:   cd.Gateway,
+					Namespace: cd.Namespace,
 					Resource:  "Cluster",
 				}.toMetricsLabels()...)
 
 			snapshotResources.Set(float64(len(o.Latest().snap.Resources[envoycachetypes.Endpoint].Items)),
 				snapshotResourcesMetricLabels{
-					Gateway:   gateway,
-					Namespace: namespace,
+					Gateway:   cd.Gateway,
+					Namespace: cd.Namespace,
 					Resource:  "Endpoint",
 				}.toMetricsLabels()...)
 
 			snapshotResources.Set(float64(len(o.Latest().snap.Resources[envoycachetypes.Route].Items)),
 				snapshotResourcesMetricLabels{
-					Gateway:   gateway,
-					Namespace: namespace,
+					Gateway:   cd.Gateway,
+					Namespace: cd.Namespace,
 					Resource:  "Route",
 				}.toMetricsLabels()...)
 
 			snapshotResources.Set(float64(len(o.Latest().snap.Resources[envoycachetypes.Listener].Items)),
 				snapshotResourcesMetricLabels{
-					Gateway:   gateway,
-					Namespace: namespace,
+					Gateway:   cd.Gateway,
+					Namespace: cd.Namespace,
 					Resource:  "Listener",
 				}.toMetricsLabels()...)
 		}
