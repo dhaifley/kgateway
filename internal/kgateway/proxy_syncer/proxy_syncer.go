@@ -70,11 +70,6 @@ type ProxySyncer struct {
 
 	waitForSync []cache.InformerSynced
 	ready       atomic.Bool
-
-	routeStatusMetrics    statusSyncMetricsRecorder
-	gatewayStatusMetrics  statusSyncMetricsRecorder
-	listenerStatusMetrics statusSyncMetricsRecorder
-	policyStatusMetrics   statusSyncMetricsRecorder
 }
 
 type GatewayXdsResources struct {
@@ -157,10 +152,6 @@ func NewProxySyncer(
 		uniqueClients:         uniqueClients,
 		translator:            translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols),
 		plugins:               mergedPlugins,
-		routeStatusMetrics:    newStatusSyncMetricsRecorder("RouteStatusSyncer"),
-		gatewayStatusMetrics:  newStatusSyncMetricsRecorder("GatewayStatusSyncer"),
-		listenerStatusMetrics: newStatusSyncMetricsRecorder("ListenerSetStatusSyncer"),
-		policyStatusMetrics:   newStatusSyncMetricsRecorder("PolicyStatusSyncer"),
 	}
 }
 
@@ -455,8 +446,9 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, 
 
 	var rErr error
 
-	finishMetrics := s.routeStatusMetrics.StatusSyncStart()
-	defer func() { finishMetrics(rErr) }()
+	defer func() {
+		collectStatusSyncMetrics("RouteStatusSyncer")(rErr)
+	}()
 
 	// Helper function to sync route status with retry
 	syncStatusWithRetry := func(
@@ -620,7 +612,7 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger
 	stopwatch := utils.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
 
-	defer s.gatewayStatusMetrics.StatusSyncStart()(nil)
+	defer collectStatusSyncMetrics("GatewayStatusSyncer")(nil)
 
 	// TODO: retry within loop per GW rather that as a full block
 	err := retry.Do(func() error {
@@ -675,7 +667,7 @@ func (s *ProxySyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Lo
 	stopwatch := utils.NewTranslatorStopWatch("ListenerSetStatusSyncer")
 	stopwatch.Start()
 
-	defer s.listenerStatusMetrics.StatusSyncStart()(nil)
+	defer collectStatusSyncMetrics("ListenerSetStatusSyncer")(nil)
 
 	// TODO: retry within loop per LS rathen that as a full block
 	err := retry.Do(func() error {
@@ -728,7 +720,7 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	defer s.policyStatusMetrics.StatusSyncStart()(nil)
+	defer collectStatusSyncMetrics("PolicyStatusSyncer")(nil)
 
 	// Sync Policy statuses
 	for key := range rm.Policies {
