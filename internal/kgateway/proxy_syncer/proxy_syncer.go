@@ -772,7 +772,7 @@ func (s *ProxySyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap
 		}
 
 		finishMetrics := collectStatusSyncMetrics(statusSyncMetricLabels{
-			Name:      nsName.Name,
+			Name:      gk.Kind,
 			Namespace: nsName.Namespace,
 			Syncer:    "PolicyStatusSyncer",
 		})
