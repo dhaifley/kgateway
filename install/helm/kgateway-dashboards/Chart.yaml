@@ -1,0 +1,7 @@
+apiVersion: v2
+name: kgateway-dashboards
+description: A Helm chart for kgateway Grafana dashboards
+icon: https://raw.githubusercontent.com/kgateway-dev/kgateway.dev/main/static/favicon.svg
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
