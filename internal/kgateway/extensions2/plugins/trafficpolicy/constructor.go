@@ -85,6 +85,11 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 		errors = append(errors, err)
 	}
 
+	// Construct header modifiers specific IR
+	if err := constructHeaderModifiers(policyCR.Spec, &outSpec); err != nil {
+		errors = append(errors, err)
+	}
+
 	// Construct hash policy specific IR
 	constructHashPolicy(policyCR.Spec, &outSpec)
 	// Construct auto host rewrite specific IR

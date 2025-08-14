@@ -86,6 +86,10 @@ type TrafficPolicySpec struct {
 	// +optional
 	Csrf *CSRFPolicy `json:"csrf,omitempty"`
 
+	// HeaderModifiers define filters that modify request or response headers.
+	// +optional
+	HeaderModifiers *HeaderModifiersPolicy `json:"headerModifiers,omitempty"`
+
 	// HashPolicies specifies the hash policies for hashing load balancers (RingHash, Maglev).
 	// Should be used in conjunction with Load Balancer on the BackendConfigPolicy.
 	// Note: can only be used when targeting routes.
@@ -406,6 +410,18 @@ type CSRFPolicy struct {
 	// +optional
 	// +kubebuilder:validation:MaxItems=16
 	AdditionalOrigins []StringMatcher `json:"additionalOrigins,omitempty"`
+}
+
+// HeaderModifiersPolicy can be used to define filters that modify request or response headers.
+// +kubebuilder:validation:XValidation:rule="has(self.requestHeaderModifier) || has(self.responseHeaderModifier)",message="At least one of requestHeaderModifier or responseHeaderModifier must be provided."
+type HeaderModifiersPolicy struct {
+	// RequestHeaderModifier defines filters that modify request headers.
+	// +optional
+	RequestHeaderModifier *gwv1.HTTPHeaderFilter `json:"requestHeaderModifier,omitempty"`
+
+	// ResponseHeaderModifier defines filters that modify response headers.
+	// +optional
+	ResponseHeaderModifier *gwv1.HTTPHeaderFilter `json:"responseHeaderModifier,omitempty"`
 }
 
 // +kubebuilder:validation:ExactlyOneOf=header;cookie;sourceIP
