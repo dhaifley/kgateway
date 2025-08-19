@@ -8,15 +8,14 @@ import (
 )
 
 const (
-	statusSubsystem    = "status_syncer"
-	snapshotSubsystem  = "xds_snapshot"
-	resourcesSubsystem = "resources"
-	syncerNameLabel    = "syncer"
-	gatewayLabel       = "gateway"
-	nameLabel          = "name"
-	namespaceLabel     = "namespace"
-	resultLabel        = "result"
-	resourceLabel      = "resource"
+	statusSubsystem   = "status_syncer"
+	snapshotSubsystem = "xds_snapshot"
+	syncerNameLabel   = "syncer"
+	gatewayLabel      = "gateway"
+	nameLabel         = "name"
+	namespaceLabel    = "namespace"
+	resultLabel       = "result"
+	resourceLabel     = "resource"
 )
 
 var (
@@ -68,46 +67,6 @@ var (
 			Subsystem: snapshotSubsystem,
 			Name:      "resources",
 			Help:      "Current number of resources in XDS snapshot",
-		},
-		[]string{gatewayLabel, namespaceLabel, resourceLabel},
-	)
-
-	resourcesHistogramBuckets          = []float64{0.1, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300, 600, 1200, 1800}
-	resourcesStatusSyncsCompletedTotal = metrics.NewCounter(
-		metrics.CounterOpts{
-			Subsystem: resourcesSubsystem,
-			Name:      "status_syncs_completed_total",
-			Help:      "Total number of status syncs completed for resources",
-		},
-		[]string{gatewayLabel, namespaceLabel, resourceLabel})
-	resourcesStatusSyncDuration = metrics.NewHistogram(
-		metrics.HistogramOpts{
-			Subsystem:                       resourcesSubsystem,
-			Name:                            "status_sync_duration_seconds",
-			Help:                            "Duration of time for a resource update to receive a status report",
-			Buckets:                         resourcesHistogramBuckets,
-			NativeHistogramBucketFactor:     1.1,
-			NativeHistogramMaxBucketNumber:  100,
-			NativeHistogramMinResetDuration: time.Hour,
-		},
-		[]string{gatewayLabel, namespaceLabel, resourceLabel},
-	)
-	resourcesXDSSyncsTotal = metrics.NewCounter(
-		metrics.CounterOpts{
-			Subsystem: resourcesSubsystem,
-			Name:      "xds_snapshot_syncs_total",
-			Help:      "Total number of XDS snapshot syncs for resources",
-		},
-		[]string{gatewayLabel, namespaceLabel, resourceLabel})
-	resourcesXDSyncDuration = metrics.NewHistogram(
-		metrics.HistogramOpts{
-			Subsystem:                       resourcesSubsystem,
-			Name:                            "xds_snapshot_sync_duration_seconds",
-			Help:                            "Duration of time for a resource update to be synced in XDS snapshots",
-			Buckets:                         resourcesHistogramBuckets,
-			NativeHistogramBucketFactor:     1.1,
-			NativeHistogramMaxBucketNumber:  100,
-			NativeHistogramMinResetDuration: time.Hour,
 		},
 		[]string{gatewayLabel, namespaceLabel, resourceLabel},
 	)
@@ -240,5 +199,4 @@ func ResetMetrics() {
 	snapshotTransformsTotal.Reset()
 	snapshotTransformDuration.Reset()
 	snapshotResources.Reset()
-	resourcesStatusSyncsCompletedTotal.Reset()
 }

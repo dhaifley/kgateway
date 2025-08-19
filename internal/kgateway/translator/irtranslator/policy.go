@@ -26,11 +26,12 @@ func reportPolicyAcceptanceStatus(
 			continue
 		}
 
-		// Start the resource sync metrics for the policy.
-		metrics.StartResourceSync(policy.PolicyRef.Name, metrics.ResourceMetricLabels{
-			Gateway:   string(ancestorRef.Name),
-			Namespace: policy.PolicyRef.Namespace,
-			Resource:  policy.PolicyRef.Kind,
+		// Start the resource status sync metrics for the policy.
+		metrics.StartResourceStatusSync(metrics.ResourceSyncDetails{
+			Gateway:      string(ancestorRef.Name),
+			Namespace:    policy.PolicyRef.Namespace,
+			ResourceType: policy.PolicyRef.Kind,
+			ResourceName: policy.PolicyRef.Name,
 		})
 
 		key := reporter.PolicyKey{
