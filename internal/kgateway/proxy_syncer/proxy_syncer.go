@@ -24,6 +24,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
+	tmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -386,6 +387,8 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	s.perclientSnapCollection.RegisterBatch(func(o []krt.Event[XdsSnapWrapper]) {
 		for _, e := range o {
+			cd := getDetailsFromXDSClientResourceName(e.Latest().ResourceName())
+
 			if e.Event != controllers.EventDelete {
 				snapWrap := e.Latest()
 				s.proxyTranslator.syncXds(ctx, snapWrap)
@@ -394,7 +397,22 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				// if _, err := s.proxyTranslator.xdsCache.GetSnapshot(key); err == nil {
 				// 	s.proxyTranslator.xdsCache.ClearSnapshot(e.Latest().proxyKey)
 				// }
+
+				// On gateway deletion, there will not have been a gateway translation,
+				// so it is necessary to start a resource sync here.
+				tmetrics.StartResourceXDSSync(tmetrics.ResourceSyncDetails{
+					Gateway:      cd.Gateway,
+					Namespace:    cd.Namespace,
+					ResourceType: wellknown.GatewayKind,
+					ResourceName: cd.Gateway,
+				})
 			}
+
+			tmetrics.EndResourceXDSSync(tmetrics.ResourceSyncDetails{
+				Namespace:    cd.Namespace,
+				Gateway:      cd.Gateway,
+				ResourceName: cd.Gateway,
+			})
 		}
 	}, true)
 
