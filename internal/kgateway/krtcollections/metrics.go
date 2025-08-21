@@ -8,6 +8,7 @@ import (
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	tmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
@@ -186,6 +187,19 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 					Namespace: namespace,
 					Resource:  resourceType,
 				}.toMetricsLabels()...)
+
+				resourceSyncDetails := tmetrics.ResourceSyncDetails{
+					Gateway:      name,
+					Namespace:    namespace,
+					ResourceType: resourceType,
+					ResourceName: name,
+				}
+
+				tmetrics.StartResourceStatusSync(resourceSyncDetails)
+
+				if resourceType == wellknown.GatewayKind {
+					tmetrics.StartResourceXDSSync(resourceSyncDetails)
+				}
 			}
 		case controllers.EventUpdate:
 			for _, name := range namesOld {
@@ -202,6 +216,19 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 					Namespace: namespace,
 					Resource:  resourceType,
 				}.toMetricsLabels()...)
+
+				resourceSyncDetails := tmetrics.ResourceSyncDetails{
+					Gateway:      name,
+					Namespace:    namespace,
+					ResourceType: resourceType,
+					ResourceName: name,
+				}
+
+				tmetrics.StartResourceStatusSync(resourceSyncDetails)
+
+				if resourceType == wellknown.GatewayKind {
+					tmetrics.StartResourceXDSSync(resourceSyncDetails)
+				}
 			}
 		case controllers.EventDelete:
 			for _, name := range names {
@@ -210,6 +237,19 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 					Namespace: namespace,
 					Resource:  resourceType,
 				}.toMetricsLabels()...)
+
+				resourceSyncDetails := tmetrics.ResourceSyncDetails{
+					Gateway:      name,
+					Namespace:    namespace,
+					ResourceType: resourceType,
+					ResourceName: name,
+				}
+
+				tmetrics.StartResourceStatusSync(resourceSyncDetails)
+
+				if resourceType == wellknown.GatewayKind {
+					tmetrics.StartResourceXDSSync(resourceSyncDetails)
+				}
 			}
 		}
 	}

@@ -18,9 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -133,16 +131,6 @@ func (s *CombinedTranslator) GetUpstreamTranslator() *irtranslator.BackendTransl
 
 // ctx needed for logging; remove once we refactor logging.
 func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway) (*irtranslator.TranslationResult, reports.ReportMap) {
-	resourceSyncDetails := metrics.ResourceSyncDetails{
-		Gateway:      gw.Name,
-		Namespace:    gw.Namespace,
-		ResourceType: wellknown.GatewayKind,
-		ResourceName: gw.Name,
-	}
-
-	metrics.StartResourceStatusSync(resourceSyncDetails)
-	metrics.StartResourceXDSSync(resourceSyncDetails)
-
 	rm := reports.NewReportMap()
 	r := reports.NewReporter(&rm)
 	logger.Debug("translating Gateway", "resource_ref", gw.ResourceName(), "resource_version", gw.Obj.GetResourceVersion())
