@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	tmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
+	kmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )
@@ -20,7 +20,7 @@ const (
 
 func setupTest() {
 	ResetMetrics()
-	tmetrics.ResetMetrics()
+	kmetrics.ResetMetrics()
 }
 
 func TestCollectStatusSyncMetrics_Success(t *testing.T) {
@@ -93,16 +93,16 @@ func TestResourceSyncMetrics(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	tmetrics.StartResourceSyncMetricsProcessing(ctx)
+	kmetrics.StartResourceSyncMetricsProcessing(ctx)
 
-	tmetrics.StartResourceStatusSync(tmetrics.ResourceSyncDetails{
+	kmetrics.StartResourceStatusSync(kmetrics.ResourceSyncDetails{
 		Gateway:      testName,
 		Namespace:    testNS,
 		ResourceType: testResource,
 		ResourceName: testName,
 	})
 
-	tmetrics.EndResourceStatusSync(tmetrics.ResourceSyncDetails{
+	kmetrics.EndResourceStatusSync(kmetrics.ResourceSyncDetails{
 		Gateway:      testName,
 		Namespace:    testNS,
 		ResourceType: testResource,

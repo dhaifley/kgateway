@@ -26,7 +26,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	tmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
+	kmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -194,7 +194,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 
 				defer func() {
 					for _, gatewayName := range gatewayNames {
-						tmetrics.EndResourceStatusSync(tmetrics.ResourceSyncDetails{
+						kmetrics.EndResourceStatusSync(kmetrics.ResourceSyncDetails{
 							Namespace:    routeKey.Namespace,
 							Gateway:      gatewayName,
 							ResourceType: routeType,
@@ -413,7 +413,7 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 		}
 
 		// Record metrics for this gateway
-		tmetrics.EndResourceStatusSync(tmetrics.ResourceSyncDetails{
+		kmetrics.EndResourceStatusSync(kmetrics.ResourceSyncDetails{
 			Namespace:    gwnn.Namespace,
 			Gateway:      gwnn.Name,
 			ResourceType: wellknown.GatewayKind,
@@ -484,7 +484,7 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 					logger.Debug("skipping k8s ls status update, status equal", "listenerset", lsnn.String())
 				}
 
-				tmetrics.EndResourceStatusSync(tmetrics.ResourceSyncDetails{
+				kmetrics.EndResourceStatusSync(kmetrics.ResourceSyncDetails{
 					Namespace:    ls.Namespace,
 					Gateway:      string(ls.Spec.ParentRef.Name),
 					ResourceType: "XListenerSet",
@@ -579,21 +579,12 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			continue
 		}
 
-		for _, ancestor := range status.Ancestors {
-			if ancestor.AncestorRef.Kind != nil && *ancestor.AncestorRef.Kind == "Gateway" {
-				namespace := nsName.Namespace
-				if ancestor.AncestorRef.Namespace != nil {
-					namespace = string(*ancestor.AncestorRef.Namespace)
-				}
-
-				tmetrics.EndResourceStatusSync(tmetrics.ResourceSyncDetails{
-					Namespace:    namespace,
-					Gateway:      string(ancestor.AncestorRef.Name),
-					ResourceType: gk.Kind,
-					ResourceName: nsName.Name,
-				})
-			}
-		}
+		kmetrics.EndResourceStatusSync(kmetrics.ResourceSyncDetails{
+			Namespace:    nsName.Namespace,
+			Gateway:      "",
+			ResourceType: gk.Kind,
+			ResourceName: nsName.Name,
+		})
 
 		finishMetrics(statusErr)
 	}
