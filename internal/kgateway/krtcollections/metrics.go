@@ -8,6 +8,7 @@ import (
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	tmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
@@ -46,6 +47,7 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 	var (
 		eventType       controllers.EventType
 		resourceType    string
+		resourceName    string
 		names           []string
 		namesOld        []string
 		namespace       string
@@ -67,6 +69,7 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 		switch obj := clientObject.(type) {
 		case ir.PolicyWrapper:
 			resourceType = obj.Kind
+			resourceName = obj.Policy.GetName()
 			namespace = obj.Policy.GetNamespace()
 			names = make([]string, 0, len(obj.TargetRefs))
 
@@ -96,6 +99,7 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			}
 		case *gwv1.HTTPRoute:
 			resourceType = "HTTPRoute"
+			resourceName = obj.Name
 			namespace = obj.Namespace
 			names = make([]string, 0, len(obj.Spec.ParentRefs))
 			for _, pr := range obj.Spec.ParentRefs {
@@ -112,6 +116,7 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			}
 		case *gwv1a2.TCPRoute:
 			resourceType = "TCPRoute"
+			resourceName = obj.Name
 			namespace = obj.Namespace
 			names = make([]string, 0, len(obj.Spec.ParentRefs))
 			for _, pr := range obj.Spec.ParentRefs {
@@ -128,6 +133,7 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			}
 		case *gwv1a2.TLSRoute:
 			resourceType = "TLSRoute"
+			resourceName = obj.Name
 			namespace = obj.Namespace
 			names = make([]string, 0, len(obj.Spec.ParentRefs))
 			for _, pr := range obj.Spec.ParentRefs {
@@ -144,6 +150,7 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			}
 		case *gwv1.GRPCRoute:
 			resourceType = "GRPCRoute"
+			resourceName = obj.Name
 			namespace = obj.Namespace
 			names = make([]string, 0, len(obj.Spec.ParentRefs))
 			for _, pr := range obj.Spec.ParentRefs {
@@ -160,6 +167,7 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			}
 		case *gwv1.Gateway:
 			resourceType = "Gateway"
+			resourceName = obj.Name
 			namespace = obj.Namespace
 			names = []string{obj.Name}
 
@@ -169,6 +177,7 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			}
 		case *gwxv1a1.XListenerSet:
 			resourceType = "XListenerSet"
+			resourceName = obj.Name
 			namespace = obj.Namespace
 			names = []string{string(obj.Spec.ParentRef.Name)}
 
@@ -186,6 +195,19 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 					Namespace: namespace,
 					Resource:  resourceType,
 				}.toMetricsLabels()...)
+
+				resourceSyncDetails := tmetrics.ResourceSyncDetails{
+					Gateway:      name,
+					Namespace:    namespace,
+					ResourceType: resourceType,
+					ResourceName: resourceName,
+				}
+
+				tmetrics.StartResourceStatusSync(resourceSyncDetails)
+
+				if resourceType == wellknown.GatewayKind {
+					tmetrics.StartResourceXDSSync(resourceSyncDetails)
+				}
 			}
 		case controllers.EventUpdate:
 			for _, name := range namesOld {
@@ -202,6 +224,19 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 					Namespace: namespace,
 					Resource:  resourceType,
 				}.toMetricsLabels()...)
+
+				resourceSyncDetails := tmetrics.ResourceSyncDetails{
+					Gateway:      name,
+					Namespace:    namespace,
+					ResourceType: resourceType,
+					ResourceName: resourceName,
+				}
+
+				tmetrics.StartResourceStatusSync(resourceSyncDetails)
+
+				if resourceType == wellknown.GatewayKind {
+					tmetrics.StartResourceXDSSync(resourceSyncDetails)
+				}
 			}
 		case controllers.EventDelete:
 			for _, name := range names {
@@ -210,6 +245,19 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 					Namespace: namespace,
 					Resource:  resourceType,
 				}.toMetricsLabels()...)
+
+				resourceSyncDetails := tmetrics.ResourceSyncDetails{
+					Gateway:      name,
+					Namespace:    namespace,
+					ResourceType: resourceType,
+					ResourceName: resourceName,
+				}
+
+				tmetrics.StartResourceStatusSync(resourceSyncDetails)
+
+				if resourceType == wellknown.GatewayKind {
+					tmetrics.StartResourceXDSSync(resourceSyncDetails)
+				}
 			}
 		}
 	}
