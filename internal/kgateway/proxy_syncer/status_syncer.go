@@ -579,21 +579,12 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			continue
 		}
 
-		for _, ancestor := range status.Ancestors {
-			if ancestor.AncestorRef.Kind != nil && *ancestor.AncestorRef.Kind == "Gateway" {
-				namespace := nsName.Namespace
-				if ancestor.AncestorRef.Namespace != nil {
-					namespace = string(*ancestor.AncestorRef.Namespace)
-				}
-
-				tmetrics.EndResourceStatusSync(tmetrics.ResourceSyncDetails{
-					Namespace:    namespace,
-					Gateway:      string(ancestor.AncestorRef.Name),
-					ResourceType: gk.Kind,
-					ResourceName: nsName.Name,
-				})
-			}
-		}
+		tmetrics.EndResourceStatusSync(tmetrics.ResourceSyncDetails{
+			Namespace:    nsName.Namespace,
+			Gateway:      "",
+			ResourceType: gk.Kind,
+			ResourceName: nsName.Name,
+		})
 
 		finishMetrics(statusErr)
 	}
