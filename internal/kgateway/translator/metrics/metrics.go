@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -240,6 +241,10 @@ func StartResourceStatusSync(details ResourceSyncDetails) {
 	startTimes.Lock()
 	defer startTimes.Unlock()
 
+	defer func() {
+		fmt.Println("StartResourceStatusSync: ", details, startTimes.times)
+	}()
+
 	if startTimes.times == nil {
 		startTimes.times = make(map[string]map[string]map[string]map[string]ResourceSyncStartTime)
 	}
@@ -393,6 +398,10 @@ func EndResourceXDSSync(details ResourceSyncDetails) bool {
 func endResourceSync(syncInfo *syncStartInfo) {
 	startTimes.Lock()
 	defer startTimes.Unlock()
+
+	defer func() {
+		fmt.Println("endResourceSync: ", syncInfo, startTimes.times)
+	}()
 
 	if startTimes.times == nil {
 		return
