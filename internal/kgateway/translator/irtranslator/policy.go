@@ -8,7 +8,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
@@ -26,13 +25,13 @@ func reportPolicyAcceptanceStatus(
 			continue
 		}
 
-		// Start the resource status sync metrics for the policy.
-		metrics.StartResourceStatusSync(metrics.ResourceSyncDetails{
-			Gateway:      string(ancestorRef.Name),
-			Namespace:    policy.PolicyRef.Namespace,
-			ResourceType: policy.PolicyRef.Kind,
-			ResourceName: policy.PolicyRef.Name,
-		})
+		// // Start the resource status sync metrics for the policy.
+		// metrics.StartResourceStatusSync(metrics.ResourceSyncDetails{
+		// 	Gateway:      string(ancestorRef.Name),
+		// 	Namespace:    policy.PolicyRef.Namespace,
+		// 	ResourceType: policy.PolicyRef.Kind,
+		// 	ResourceName: policy.PolicyRef.Name,
+		// })
 
 		key := reporter.PolicyKey{
 			Group:     policy.PolicyRef.Group,
