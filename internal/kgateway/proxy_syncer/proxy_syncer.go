@@ -22,9 +22,9 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	kmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
-	tmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -400,7 +400,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 				// On gateway deletion, there will not have been a gateway translation,
 				// so it is necessary to start a resource sync here.
-				tmetrics.StartResourceXDSSync(tmetrics.ResourceSyncDetails{
+				kmetrics.StartResourceXDSSync(kmetrics.ResourceSyncDetails{
 					Gateway:      cd.Gateway,
 					Namespace:    cd.Namespace,
 					ResourceType: wellknown.GatewayKind,
@@ -408,7 +408,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				})
 			}
 
-			tmetrics.EndResourceXDSSync(tmetrics.ResourceSyncDetails{
+			kmetrics.EndResourceXDSSync(kmetrics.ResourceSyncDetails{
 				Namespace:    cd.Namespace,
 				Gateway:      cd.Gateway,
 				ResourceName: cd.Gateway,

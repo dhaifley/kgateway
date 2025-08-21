@@ -71,12 +71,12 @@ func translateGatewayHTTPRouteRulesUtil(
 			Translator: "TranslateHTTPRoute",
 		}))(nil)
 
-		metrics.StartResourceStatusSync(metrics.ResourceSyncDetails{
-			Gateway:      string(routeInfo.ParentRef.Name),
-			Namespace:    routeInfo.GetNamespace(),
-			ResourceType: routeInfo.GetKind(),
-			ResourceName: routeInfo.GetName(),
-		})
+		// metrics.StartResourceStatusSync(metrics.ResourceSyncDetails{
+		// 	Gateway:      string(routeInfo.ParentRef.Name),
+		// 	Namespace:    routeInfo.GetNamespace(),
+		// 	ResourceType: routeInfo.GetKind(),
+		// 	ResourceName: routeInfo.GetName(),
+		// })
 	}
 
 	for ruleIdx, rule := range route.Rules {
