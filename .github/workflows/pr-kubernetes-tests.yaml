@@ -73,7 +73,7 @@ jobs:
         # August 29, 2025: ~4 minutes
         - cluster-name: 'cluster-multi-install'
           go-test-args: '-v -timeout=5m'
-          go-test-run-regex: '^TestMultipleInstalls'
+          go-test-run-regex: '^TestMultipleInstalls|^TestZeroDowntimeRollout$$'
           localstack: 'false'
         # August 29, 2025: ~4 minutes
         - cluster-name: 'agent-gateway-cluster'

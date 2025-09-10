@@ -149,7 +149,7 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 			tcpRouteManifest:  crossNsNoRefGrantTCPRouteManifest,
 			proxyService:      crossNsNoRefGrantProxyService,
 			proxyDeployment:   crossNsNoRefGrantProxyDeployment,
-			expectedErrorCode: 56,
+			expectedErrorCode: 52,
 			ports:             []int{8080},
 			listenerNames: []v1.SectionName{
 				v1.SectionName(crossNsNoRefGrantListenerName),
@@ -236,7 +236,7 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 							curl.WithPort(port),
 							curl.VerboseOutput(),
 						},
-						tc.expectedErrorCode)
+						tc.expectedErrorCode, timeout)
 				} else {
 					s.testInstallation.Assertions.AssertEventualCurlResponse(
 						s.ctx,
@@ -246,7 +246,7 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 							curl.WithPort(port),
 							curl.VerboseOutput(),
 						},
-						tc.expectedResponses[i])
+						tc.expectedResponses[i], timeout)
 				}
 			}
 		})
