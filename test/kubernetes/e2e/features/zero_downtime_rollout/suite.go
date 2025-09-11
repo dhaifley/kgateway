@@ -1,5 +1,3 @@
-//go:build ignore
-
 package zero_downtime_rollout
 
 import (
@@ -7,10 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
@@ -24,54 +23,57 @@ type testingSuite struct {
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
-		base.NewBaseTestingSuite(ctx, testInst, e2e.MustTestHelper(ctx, testInst), base.SimpleTestCase{}, zeroDowntimeTestCases),
+		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
 	}
 }
 
 func (s *testingSuite) TestZeroDowntimeRollout() {
-	// Ensure the gloo gateway pod is up and running
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, glooProxyObjectMeta, Equal(1))
+	// Ensure the gateway pod is up and running.
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+		proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+			LabelSelector: "app.kubernetes.io/name=" + proxyObjectMeta.GetName(),
+		})
+
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
 			curl.WithHostHeader("example.com"),
 		},
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 		})
 
-	// Send traffic to the gloo gateway pod while we restart the deployment
+	kCli := kubectl.NewCli()
+
+	// Send traffic to the gateway pod while we restart the deployment.
 	// Run this for 30s which is long enough to restart the deployment since there's no easy way
-	// to stop this command once the test is over
-	// This executes 800 req @ 4 req/sec = 20s (3 * terminationGracePeriodSeconds (5) + buffer)
-	// kubectl exec -n hey hey -- hey -disable-keepalive -c 4 -q 10 --cpus 1 -n 1200 -m GET -t 1 -host example.com http://gw.default.svc.cluster.local:8080
+	// to stop this command once the test is over.
+	// This executes 800 req @ 4 req/sec = 20s (3 * terminationGracePeriodSeconds (5) + buffer).
+	// kubectl exec -n hey hey -- hey -disable-keepalive -c 4 -q 10 --cpus 1 -n 800 -m GET -t 1 -host example.com http://gw.default.svc.cluster.local:8080.
 	args := []string{"exec", "-n", "hey", "hey", "--", "hey", "-disable-keepalive", "-c", "4", "-q", "10", "--cpus", "1", "-n", "800", "-m", "GET", "-t", "1", "-host", "example.com", "http://gw.default.svc.cluster.local:8080"}
 
-	var err error
-	cmd := s.TestHelper.Cli.Command(s.Ctx, args...)
-	err = cmd.Start()
-	Expect(err).ToNot(HaveOccurred())
+	cmd := kCli.Command(s.Ctx, args...)
 
-	// Restart the deployment. There should be no downtime since the gloo gateway pod should have the readiness probes configured
-	err = s.TestHelper.RestartDeploymentAndWait(s.Ctx, "gw")
-	Expect(err).ToNot(HaveOccurred())
+	if err := cmd.Start(); err != nil {
+		s.T().Fatal("error starting command", err)
+	}
 
-	time.Sleep(1 * time.Second)
+	// Restart the deployment, twice.
+	// There should be no downtime, since the gateway pod
+	// should have readiness probes configured.
+	err := kCli.RestartDeploymentAndWait(s.Ctx, "gw")
+	s.Require().NoError(err)
 
-	// We're just flexing at this point
-	err = s.TestHelper.RestartDeploymentAndWait(s.Ctx, "gw")
-	Expect(err).ToNot(HaveOccurred())
+	time.Sleep(time.Second)
 
-	now := time.Now()
-	err = cmd.Wait()
-	Expect(err).ToNot(HaveOccurred())
+	err = kCli.RestartDeploymentAndWait(s.Ctx, "gw")
+	s.Require().NoError(err)
 
-	// Since there's no easy way to stop the command after we've restarted the deployment,
-	// we ensure that at least 1 second has passed since we began sending traffic to the gloo gateway pod
-	after := int(time.Now().Sub(now).Abs().Seconds())
-	s.GreaterOrEqual(after, 1)
+	if err := cmd.Wait(); err != nil {
+		s.T().Fatal("error waiting for command to finish", err)
+	}
 
 	// 	Summary:
 	// 		Total:	30.0113 secs
@@ -122,7 +124,7 @@ func (s *testingSuite) TestZeroDowntimeRollout() {
 	//   	[17]	Get http://gw.default.svc.cluster.local:8080: dial tcp 10.96.177.91:8080: connection refused
 	//   	[4]	Get http://gw.default.svc.cluster.local:8080: net/http: request canceled while waiting for connection
 
-	// Verify that there were no errors
-	Expect(cmd.Output()).To(ContainSubstring("[200]	800 responses"))
-	Expect(cmd.Output()).ToNot(ContainSubstring("Error distribution"))
+	// Verify that there were no errors.
+	s.Contains(string(cmd.Output()), "[200]	800 responses")
+	s.NotContains(string(cmd.Output()), "Error distribution")
 }
