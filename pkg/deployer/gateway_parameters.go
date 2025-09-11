@@ -4,6 +4,7 @@ import (
 	"istio.io/api/annotation"
 	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -183,6 +184,26 @@ func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters 
 				},
 				Service: &v1alpha1.Service{
 					Type: (*corev1.ServiceType)(ptr.To(string(corev1.ServiceTypeLoadBalancer))),
+				},
+				PodTemplate: &v1alpha1.Pod{
+					TerminationGracePeriodSeconds: ptr.To(5),
+					GracefulShutdown: &v1alpha1.GracefulShutdownSpec{
+						Enabled:          ptr.To(true),
+						SleepTimeSeconds: ptr.To(1),
+					},
+					ReadinessProbe: &corev1.Probe{
+						ProbeHandler: corev1.ProbeHandler{
+							HTTPGet: &corev1.HTTPGetAction{
+								Path: "/ready",
+								Port: intstr.FromInt(8082),
+							},
+						},
+						InitialDelaySeconds: 5,
+						PeriodSeconds:       10,
+						TimeoutSeconds:      2,
+						FailureThreshold:    3,
+						SuccessThreshold:    1,
+					},
 				},
 				EnvoyContainer: &v1alpha1.EnvoyContainer{
 					Bootstrap: &v1alpha1.EnvoyBootstrap{
