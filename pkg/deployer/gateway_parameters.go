@@ -129,8 +129,9 @@ func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClas
 func defaultAgentGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
 	gwp := defaultGatewayParameters(imageInfo)
 	gwp.Spec.Kube.AgentGateway.Enabled = ptr.To(true)
-	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Path = "/healthz/ready"
-	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Port = intstr.FromInt(15021)
+	gwp.Spec.Kube.PodTemplate.ReadinessProbe.TCPSocket.Port = intstr.FromInt(15021)
+	gwp.Spec.Kube.PodTemplate.StartupProbe.HTTPGet.Path = "/healthz/ready"
+	gwp.Spec.Kube.PodTemplate.StartupProbe.HTTPGet.Port = intstr.FromInt(15021)
 	gwp.Spec.Kube.PodTemplate.GracefulShutdown.Enabled = ptr.To(true)
 	return gwp
 }
@@ -196,6 +197,15 @@ func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters 
 						SleepTimeSeconds: ptr.To(10),
 					},
 					ReadinessProbe: &corev1.Probe{
+						ProbeHandler: corev1.ProbeHandler{
+							TCPSocket: &corev1.TCPSocketAction{
+								Port: intstr.FromInt(8082),
+							},
+						},
+						InitialDelaySeconds: 5,
+						PeriodSeconds:       10,
+					},
+					StartupProbe: &corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{
 							HTTPGet: &corev1.HTTPGetAction{
 								Path: "/ready",

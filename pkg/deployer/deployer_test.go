@@ -1456,6 +1456,7 @@ var _ = Describe("Deployer", func() {
 				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
 				params.Spec.Kube.PodTemplate.LivenessProbe = generateLivenessProbe()
 				params.Spec.Kube.PodTemplate.ReadinessProbe = generateReadinessProbe()
+				params.Spec.Kube.PodTemplate.StartupProbe = generateStartupProbe()
 				params.Spec.Kube.PodTemplate.TerminationGracePeriodSeconds = ptr.To(5)
 				params.Spec.Kube.PodTemplate.GracefulShutdown = &gw2_v1alpha1.GracefulShutdownSpec{
 					Enabled:          ptr.To(true),
@@ -1793,6 +1794,7 @@ var _ = Describe("Deployer", func() {
 			envoyContainer := dep.Spec.Template.Spec.Containers[0]
 			Expect(envoyContainer.LivenessProbe).To(BeEquivalentTo(generateLivenessProbe()))
 			Expect(envoyContainer.ReadinessProbe).To(BeEquivalentTo(generateReadinessProbe()))
+			Expect(envoyContainer.StartupProbe).To(BeEquivalentTo(generateStartupProbe()))
 			Expect(envoyContainer.Lifecycle.PreStop.Exec.Command).To(BeEquivalentTo([]string{
 				"/bin/sh",
 				"-c",
@@ -2825,7 +2827,7 @@ func generateLivenessProbe() *corev1.Probe {
 	}
 }
 
-func generateReadinessProbe() *corev1.Probe {
+func generateStartupProbe() *corev1.Probe {
 	return &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -2833,7 +2835,7 @@ func generateReadinessProbe() *corev1.Probe {
 				Port: intstr.IntOrString{
 					IntVal: 8082,
 				},
-				Path: "/envoy-hc",
+				Path: "/ready",
 			},
 		},
 		InitialDelaySeconds: 5,
@@ -2841,6 +2843,18 @@ func generateReadinessProbe() *corev1.Probe {
 		TimeoutSeconds:      2,
 		FailureThreshold:    2,
 		SuccessThreshold:    1,
+	}
+}
+
+func generateReadinessProbe() *corev1.Probe {
+	return &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			TCPSocket: &corev1.TCPSocketAction{
+				Port: intstr.FromInt(8082),
+			},
+		},
+		InitialDelaySeconds: 5,
+		PeriodSeconds:       10,
 	}
 }
 
