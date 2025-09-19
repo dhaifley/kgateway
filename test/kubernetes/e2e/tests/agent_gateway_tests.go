@@ -21,7 +21,7 @@ func AgentgatewaySuiteRunner() e2e.SuiteRunner {
 	agentgatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("Transformation", transformation.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("BackendTLSPolicy", backendtls.NewAgentgatewayTestingSuite)
-	agentGatewaySuiteRunner.Register("ZeroDowntimeRollout", zero_downtime_rollout.NewTestingSuite)
+	agentgatewaySuiteRunner.Register("ZeroDowntimeRollout", zero_downtime_rollout.NewTestingSuite)
 
 	return agentgatewaySuiteRunner
 }
