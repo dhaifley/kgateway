@@ -448,6 +448,10 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 		clientObjectOld any
 	)
 
+	isGatewayParentRef := func(parentRef gwv1.ParentReference) bool {
+		return parentRef.Kind != nil && *parentRef.Kind == wellknown.GatewayKind
+	}
+
 	return func(o krt.Event[T]) {
 		clientObject = o.Latest()
 		eventType = o.Event
@@ -475,6 +479,10 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			namespace = obj.Namespace
 			names = make([]string, 0, len(obj.Spec.ParentRefs))
 			for _, pr := range obj.Spec.ParentRefs {
+				if !isGatewayParentRef(pr) {
+					continue
+				}
+
 				names = append(names, string(pr.Name))
 			}
 
@@ -483,6 +491,10 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 				namespaceOld = oldObj.Namespace
 				namesOld = make([]string, 0, len(oldObj.Spec.ParentRefs))
 				for _, pr := range oldObj.Spec.ParentRefs {
+					if !isGatewayParentRef(pr) {
+						continue
+					}
+
 					namesOld = append(namesOld, string(pr.Name))
 				}
 			}
@@ -492,6 +504,10 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			namespace = obj.Namespace
 			names = make([]string, 0, len(obj.Spec.ParentRefs))
 			for _, pr := range obj.Spec.ParentRefs {
+				if !isGatewayParentRef(pr) {
+					continue
+				}
+
 				names = append(names, string(pr.Name))
 			}
 
@@ -500,6 +516,10 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 				namespaceOld = oldObj.Namespace
 				namesOld = make([]string, 0, len(oldObj.Spec.ParentRefs))
 				for _, pr := range oldObj.Spec.ParentRefs {
+					if !isGatewayParentRef(pr) {
+						continue
+					}
+
 					namesOld = append(namesOld, string(pr.Name))
 				}
 			}
@@ -509,6 +529,10 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			namespace = obj.Namespace
 			names = make([]string, 0, len(obj.Spec.ParentRefs))
 			for _, pr := range obj.Spec.ParentRefs {
+				if !isGatewayParentRef(pr) {
+					continue
+				}
+
 				names = append(names, string(pr.Name))
 			}
 
@@ -517,6 +541,10 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 				namespaceOld = oldObj.Namespace
 				namesOld = make([]string, 0, len(oldObj.Spec.ParentRefs))
 				for _, pr := range oldObj.Spec.ParentRefs {
+					if !isGatewayParentRef(pr) {
+						continue
+					}
+
 					namesOld = append(namesOld, string(pr.Name))
 				}
 			}
@@ -526,6 +554,10 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			namespace = obj.Namespace
 			names = make([]string, 0, len(obj.Spec.ParentRefs))
 			for _, pr := range obj.Spec.ParentRefs {
+				if !isGatewayParentRef(pr) {
+					continue
+				}
+
 				names = append(names, string(pr.Name))
 			}
 
@@ -534,6 +566,10 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 				namespaceOld = oldObj.Namespace
 				namesOld = make([]string, 0, len(oldObj.Spec.ParentRefs))
 				for _, pr := range oldObj.Spec.ParentRefs {
+					if !isGatewayParentRef(pr) {
+						continue
+					}
+
 					namesOld = append(namesOld, string(pr.Name))
 				}
 			}
