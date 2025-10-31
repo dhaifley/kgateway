@@ -131,6 +131,10 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
+	isGatewayParentRef := func(parentRef gwv1.ParentReference) bool {
+		return parentRef.Kind != nil && *parentRef.Kind == wellknown.GatewayKind
+	}
+
 	// Helper function to sync route status with retry
 	syncStatusWithRetry := func(
 		routeType string,
@@ -158,18 +162,34 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 				switch r := route.(type) {
 				case *gwv1.HTTPRoute:
 					for _, parentRef := range r.Spec.ParentRefs {
+						if !isGatewayParentRef(parentRef) {
+							continue
+						}
+
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
 					}
 				case *gwv1a2.TCPRoute:
 					for _, parentRef := range r.Spec.ParentRefs {
+						if !isGatewayParentRef(parentRef) {
+							continue
+						}
+
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
 					}
 				case *gwv1a2.TLSRoute:
 					for _, parentRef := range r.Spec.ParentRefs {
+						if !isGatewayParentRef(parentRef) {
+							continue
+						}
+
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
 					}
 				case *gwv1.GRPCRoute:
 					for _, parentRef := range r.Spec.ParentRefs {
+						if !isGatewayParentRef(parentRef) {
+							continue
+						}
+
 						gatewayNames = append(gatewayNames, string(parentRef.Name))
 					}
 				default:
